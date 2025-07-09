@@ -9,7 +9,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"

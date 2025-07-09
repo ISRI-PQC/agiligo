@@ -1,7 +1,7 @@
 package rsa
 
 import (
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 )
 

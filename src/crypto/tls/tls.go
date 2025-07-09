@@ -336,7 +336,7 @@ func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
 				continue
 			}
 
-			marshaler, ok := pka.(crypto.PKCS8PrivateKeyMarshaler)
+			marshaler, ok := pka.(pkcs8.PKCS8PrivateKeyMarshaler)
 			if !ok {
 				continue
 			}

@@ -25,7 +25,8 @@ import (
 	"crypto"
 	cryptorand "crypto/rand"
 	"crypto/sha1"
-	"crypto/x509/pkix"
+	"crypto/pkix"
+	"crypto/pkix/pkixparser"
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
@@ -1129,7 +1130,7 @@ func CreateCertificate(rand io.Reader, template, parent *Certificate, pub crypto
 		return nil, errors.New("x509: only CAs are allowed to specify MaxPathLen")
 	}
 
-	marshaler, ok := template.PublicKeyAlgorithm.(crypto.PKIXPublicKeyInfoParser)
+	marshaler, ok := template.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
 	if !ok {
 		return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
 	}
@@ -1471,7 +1472,7 @@ func parseCSRExtensions(rawAttributes []asn1.RawValue) ([]pkix.Extension, error)
 //
 // The returned slice is the certificate request in DER encoding.
 func CreateCertificateRequest(rand io.Reader, template *CertificateRequest, priv crypto.PrivateKey) (csr []byte, err error) {
-	marshaler, ok := template.SignatureAlgorithm.(crypto.PKIXPublicKeyInfoParser)
+	marshaler, ok := template.SignatureAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
 	if !ok {
 		return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
 	}
@@ -1662,7 +1663,7 @@ func parseCertificateRequest(in *certificateRequest) (*CertificateRequest, error
 		return nil, fmt.Errorf("x509: public key algorithm %s is not implemented", in.TBSCSR.PublicKey.AlgorithmIdentifier.Algorithm.String())
 	}
 
-	pkParser, ok := out.PublicKeyAlgorithm.(crypto.PKIXPublicKeyInfoParser)
+	pkParser, ok := out.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
 	if !ok {
 		return nil, fmt.Errorf("x509: public key algorithm %s does not implement crypto.PKIXPublicKeyInfoParser", out.PublicKeyAlgorithm.GetPublicKeyAlgorithmName())
 	}

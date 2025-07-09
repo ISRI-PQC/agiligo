@@ -12,7 +12,7 @@ package main
 import (
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/pem"
 	"math/big"
 	"strings"

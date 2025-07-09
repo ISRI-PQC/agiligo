@@ -6,7 +6,7 @@ import (
 	"crypto/pkcs8"
 	"crypto/sha256"
 	"crypto/sha512"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"

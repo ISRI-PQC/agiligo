@@ -15,7 +15,7 @@ import (
 	"crypto/rand"
 	"crypto/tls/internal/fips140tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 	"encoding/json"
 	"encoding/pem"

@@ -13,7 +13,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls/internal/fips140tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"

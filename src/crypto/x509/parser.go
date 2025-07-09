@@ -7,7 +7,8 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	"crypto/x509/pkix"
+	"crypto/pkix"
+	"crypto/pkix/pkixparser"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -964,7 +965,7 @@ func parseCertificate(der []byte) (*Certificate, error) {
 		return nil, errors.New("x509: malformed subjectPublicKey")
 	}
 
-	pkiParser, ok := cert.PublicKeyAlgorithm.(crypto.PKIXPublicKeyInfoParser)
+	pkiParser, ok := cert.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
 	if !ok {
 		return nil, fmt.Errorf("x509: public key algorithm %s does not implement crypto.PKIXPublicKeyInfoParser", cert.PublicKeyAlgorithm.GetPublicKeyAlgorithmName())
 	}

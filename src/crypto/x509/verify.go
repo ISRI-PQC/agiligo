@@ -7,7 +7,7 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"errors"
 	"fmt"
 	"iter"

@@ -1,0 +1,54 @@
+package pkixparser
+
+import (
+	"crypto"
+	"crypto/pkix"
+	"encoding/asn1"
+	"errors"
+	"fmt"
+)
+
+type PKIXPublicKeyInfoParser interface {
+	MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error)
+	ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error)
+}
+
+func GetPKIXPublicKeyInfoFromPublicKey(pk crypto.PublicKey) (*pkix.PkixPublicKeyInfo, error) {
+	for _, pka := range crypto.PublicKeyAlgorithms {
+		parser, ok := pka.(PKIXPublicKeyInfoParser)
+		if !ok {
+			continue
+		}
+
+		pkb, pkai, err := parser.MarshalPKIXPublicKey(pk)
+		if errors.Is(err, crypto.ErrMismatchedKey) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("pkix: public key info parser was found and matched to the key type, but marshaling failed: %w", err)
+		}
+
+		return &pkix.PkixPublicKeyInfo{
+			AlgorithmIdentifier: *pkai,
+			PublicKey: asn1.BitString{
+				Bytes:     pkb,
+				BitLength: 8 * len(pkb),
+			},
+		}, nil
+	}
+
+	return nil, fmt.Errorf("pkix: public key info parser was not found")
+}
+
+func GetPublicKeyFromPKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
+	pka, ok := crypto.PublicKeyAlgorithms[pki.AlgorithmIdentifier.Algorithm.String()]
+	if !ok {
+		return nil, fmt.Errorf("pkix: public key algorithm %s not implemented", pki.AlgorithmIdentifier.Algorithm.String())
+	}
+	parser, ok := pka.(PKIXPublicKeyInfoParser)
+	if !ok {
+		return nil, fmt.Errorf("pkix: public key algorithm %s does not implement PKIXPublicKeyInfoParser", pki.AlgorithmIdentifier.Algorithm.String())
+	}
+
+	return parser.ParsePKIXPublicKeyInfo(pki)
+}

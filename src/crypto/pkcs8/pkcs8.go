@@ -5,7 +5,8 @@
 package pkcs8
 
 import (
-	"crypto/x509/pkix"
+	"crypto"
+	"crypto/pkix"
 )
 
 // PKCS8PrivateKey reflects an ASN.1, PKCS #8 PrivateKey. See
@@ -16,4 +17,9 @@ type PKCS8PrivateKey struct {
 	AlgorithmIdentifier pkix.AlgorithmIdentifier
 	PrivateKey          []byte
 	// optional attributes omitted.
+}
+
+type PKCS8PrivateKeyMarshaler interface {
+	MarshalPKCS8PrivateKey(key crypto.PrivateKey) ([]byte, error)
+	UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error)
 }

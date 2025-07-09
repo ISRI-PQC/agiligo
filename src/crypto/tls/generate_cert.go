@@ -16,7 +16,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/pem"
 	"flag"
 	"log"

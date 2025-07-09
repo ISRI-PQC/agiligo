@@ -10,7 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"internal/testenv"
 	"math/big"
 	"runtime"

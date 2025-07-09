@@ -7,7 +7,7 @@ package crypto
 
 import (
 	"crypto/utils"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 	"errors"
 	"hash"
@@ -277,7 +277,6 @@ type PublicKeyAlgorithm interface {
 	GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier
 	GetPublicKeyAlgorithmName() string
 	CanSign() bool
-	// GetDefaultSignatureAlgorithm(pk PublicKey) (SignatureAlgorithm, error)
 }
 
 type KeyGenParameters interface{}
@@ -292,14 +291,4 @@ type SignatureAlgorithm interface {
 	Verify(message []byte, signature []byte, pk PublicKey) error
 	GenerateKeyPair(rand io.Reader, params KeyGenParameters) (PublicKey, PrivateKey, error)
 	ValidatePKIXAlgorithmIdentifier(ai *pkix.AlgorithmIdentifier) error
-}
-
-type PKIXPublicKeyInfoParser interface {
-	MarshalPKIXPublicKey(pk PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error)
-	ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (PublicKey, error)
-}
-
-type PKCS8PrivateKeyMarshaler interface {
-	MarshalPKCS8PrivateKey(key PrivateKey) ([]byte, error)
-	UnmarshalPKCS8PrivateKey(skBytes []byte) (PrivateKey, error)
 }

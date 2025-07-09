@@ -3,7 +3,7 @@ package ed25519
 import (
 	"crypto"
 	"crypto/pkcs8"
-	"crypto/x509/pkix"
+	"crypto/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"

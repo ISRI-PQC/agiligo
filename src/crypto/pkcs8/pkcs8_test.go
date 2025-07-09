@@ -6,11 +6,6 @@ package pkcs8
 
 import (
 	"bytes"
-	"crypto/ecdh"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/elliptic"
-	"crypto/rsa"
 	"encoding/hex"
 	"reflect"
 	"strings"

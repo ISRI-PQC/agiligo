@@ -5,7 +5,8 @@
 package pem_test
 
 import (
-	"crypto/x509"
+	"crypto/pkix"
+	"crypto/pkix/pkixparser"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -35,7 +36,12 @@ and some more`)
 		log.Fatal("failed to decode PEM block containing public key")
 	}
 
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	pki, err := pkix.UnmarshalPKIXPublicKeyInfo(block.Bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pub, err := pkixparser.GetPublicKeyFromPKIXPublicKeyInfo(pki)
 	if err != nil {
 		log.Fatal(err)
 	}
