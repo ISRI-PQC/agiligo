@@ -6,9 +6,20 @@
 package crypto
 
 import (
+	"crypto/utils"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"errors"
 	"hash"
 	"io"
 	"strconv"
+)
+
+var (
+	ErrAlgorithmNotImplemented = errors.New("crypto: algorithm not implemented")
+	ErrAlgorithmNotSupported   = errors.New("crypto: algorithm not supported")
+	ErrMismatchedKey           = errors.New("crypto: mismatched key type")
+	ErrInvalidInput            = errors.New("crypto: invalid input")
 )
 
 // Hash identifies a cryptographic hash function that is implemented in another
@@ -22,6 +33,8 @@ func (h Hash) HashFunc() Hash {
 
 func (h Hash) String() string {
 	switch h {
+	case NoHash:
+		return "NoHash"
 	case MD4:
 		return "MD4"
 	case MD5:
@@ -66,25 +79,26 @@ func (h Hash) String() string {
 }
 
 const (
-	MD4         Hash = 1 + iota // import golang.org/x/crypto/md4
-	MD5                         // import crypto/md5
-	SHA1                        // import crypto/sha1
-	SHA224                      // import crypto/sha256
-	SHA256                      // import crypto/sha256
-	SHA384                      // import crypto/sha512
-	SHA512                      // import crypto/sha512
-	MD5SHA1                     // no implementation; MD5+SHA1 used for TLS RSA
-	RIPEMD160                   // import golang.org/x/crypto/ripemd160
-	SHA3_224                    // import golang.org/x/crypto/sha3
-	SHA3_256                    // import golang.org/x/crypto/sha3
-	SHA3_384                    // import golang.org/x/crypto/sha3
-	SHA3_512                    // import golang.org/x/crypto/sha3
-	SHA512_224                  // import crypto/sha512
-	SHA512_256                  // import crypto/sha512
-	BLAKE2s_256                 // import golang.org/x/crypto/blake2s
-	BLAKE2b_256                 // import golang.org/x/crypto/blake2b
-	BLAKE2b_384                 // import golang.org/x/crypto/blake2b
-	BLAKE2b_512                 // import golang.org/x/crypto/blake2b
+	NoHash      Hash = 0 + iota
+	MD4              // import golang.org/x/crypto/md4
+	MD5              // import crypto/md5
+	SHA1             // import crypto/sha1
+	SHA224           // import crypto/sha256
+	SHA256           // import crypto/sha256
+	SHA384           // import crypto/sha512
+	SHA512           // import crypto/sha512
+	MD5SHA1          // no implementation; MD5+SHA1 used for TLS RSA
+	RIPEMD160        // import golang.org/x/crypto/ripemd160
+	SHA3_224         // import golang.org/x/crypto/sha3
+	SHA3_256         // import golang.org/x/crypto/sha3
+	SHA3_384         // import golang.org/x/crypto/sha3
+	SHA3_512         // import golang.org/x/crypto/sha3
+	SHA512_224       // import crypto/sha512
+	SHA512_256       // import crypto/sha512
+	BLAKE2s_256      // import golang.org/x/crypto/blake2s
+	BLAKE2b_256      // import golang.org/x/crypto/blake2b
+	BLAKE2b_384      // import golang.org/x/crypto/blake2b
+	BLAKE2b_512      // import golang.org/x/crypto/blake2b
 	maxHash
 )
 
@@ -159,7 +173,9 @@ func RegisterHash(h Hash, f func() hash.Hash) {
 //	}
 //
 // which can be used for increased type safety within applications.
-type PublicKey any
+type PublicKey interface {
+	Equal(x PublicKey) bool
+}
 
 // PrivateKey represents a private key using an unspecified algorithm.
 //
@@ -173,7 +189,10 @@ type PublicKey any
 //
 // as well as purpose-specific interfaces such as [Signer] and [Decrypter], which
 // can be used for increased type safety within applications.
-type PrivateKey any
+type PrivateKey interface {
+	Public() PublicKey
+	Equal(x PrivateKey) bool
+}
 
 // Signer is an interface for an opaque private key that can be used for
 // signing operations. For example, an RSA key kept in a hardware module.
@@ -221,3 +240,66 @@ type Decrypter interface {
 }
 
 type DecrypterOpts any
+
+var PublicKeyAlgorithms = make(map[string]PublicKeyAlgorithm)
+var SignatureAlgorithms = make(map[string]SignatureAlgorithm)
+
+func RegisterPublicKeyAlgorithm(oid asn1.ObjectIdentifier, pa PublicKeyAlgorithm) error {
+	if _, ok := PublicKeyAlgorithms[oid.String()]; ok {
+		return errors.New("agilicrypto: duplicate public key algorithm")
+	}
+	PublicKeyAlgorithms[oid.String()] = pa
+	return nil
+}
+
+func RegisterSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm) error {
+	if _, ok := PublicKeyAlgorithms[sa.GetPublicKeyAlgorithmOID().String()]; !ok {
+		return errors.New("agilicrypto: public key algorithm not registered, use RegisterPublicKeyAlgorithm first")
+	}
+
+	if _, ok := SignatureAlgorithms[oid.String()]; ok {
+		return errors.New("agilicrypto: duplicate signature algorithm")
+	}
+	SignatureAlgorithms[oid.String()] = sa
+	return nil
+}
+
+func OverwriteSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm, token utils.AcknowledgementToken) error {
+	if _, ok := SignatureAlgorithms[oid.String()]; !ok {
+		return errors.New("agilicrypto: signature algorithm not registered, use RegisterSignatureAlgorithm first")
+	}
+
+	SignatureAlgorithms[oid.String()] = sa
+	return nil
+}
+
+type PublicKeyAlgorithm interface {
+	GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier
+	GetPublicKeyAlgorithmName() string
+	CanSign() bool
+	// GetDefaultSignatureAlgorithm(pk PublicKey) (SignatureAlgorithm, error)
+}
+
+type KeyGenParameters interface{}
+
+type SignatureAlgorithm interface {
+	PublicKeyAlgorithm
+	GetSignatureAlgorithmOID() asn1.ObjectIdentifier
+	GetSignatureAlgorithmName() string
+	GetHash() Hash
+	GetSignatureAlgorithmIdentifier() *pkix.AlgorithmIdentifier
+	Sign(rand io.Reader, message []byte, priv PrivateKey) ([]byte, error)
+	Verify(message []byte, signature []byte, pk PublicKey) error
+	GenerateKeyPair(rand io.Reader, params KeyGenParameters) (PublicKey, PrivateKey, error)
+	ValidatePKIXAlgorithmIdentifier(ai *pkix.AlgorithmIdentifier) error
+}
+
+type PKIXPublicKeyInfoParser interface {
+	MarshalPKIXPublicKey(pk PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error)
+	ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (PublicKey, error)
+}
+
+type PKCS8PrivateKeyMarshaler interface {
+	MarshalPKCS8PrivateKey(key PrivateKey) ([]byte, error)
+	UnmarshalPKCS8PrivateKey(skBytes []byte) (PrivateKey, error)
+}

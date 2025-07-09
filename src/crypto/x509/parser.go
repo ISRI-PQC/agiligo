@@ -6,12 +6,7 @@ package x509
 
 import (
 	"bytes"
-	"crypto/dsa"
-	"crypto/ecdh"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/elliptic"
-	"crypto/rsa"
+	"crypto"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
@@ -215,107 +210,57 @@ func parseExtension(der cryptobyte.String) (pkix.Extension, error) {
 	return ext, nil
 }
 
-func parsePublicKey(keyData *publicKeyInfo) (any, error) {
-	oid := keyData.Algorithm.Algorithm
-	params := keyData.Algorithm.Parameters
-	der := cryptobyte.String(keyData.PublicKey.RightAlign())
-	switch {
-	case oid.Equal(oidPublicKeyRSA):
-		// RSA public keys must have a NULL in the parameters.
-		// See RFC 3279, Section 2.3.1.
-		if !bytes.Equal(params.FullBytes, asn1.NullBytes) {
-			return nil, errors.New("x509: RSA key missing NULL parameters")
-		}
-
-		p := &pkcs1PublicKey{N: new(big.Int)}
-		if !der.ReadASN1(&der, cryptobyte_asn1.SEQUENCE) {
-			return nil, errors.New("x509: invalid RSA public key")
-		}
-		if !der.ReadASN1Integer(p.N) {
-			return nil, errors.New("x509: invalid RSA modulus")
-		}
-		if !der.ReadASN1Integer(&p.E) {
-			return nil, errors.New("x509: invalid RSA public exponent")
-		}
-
-		if p.N.Sign() <= 0 {
-			return nil, errors.New("x509: RSA modulus is not a positive number")
-		}
-		if p.E <= 0 {
-			return nil, errors.New("x509: RSA public exponent is not a positive number")
-		}
-
-		pub := &rsa.PublicKey{
-			E: p.E,
-			N: p.N,
-		}
-		return pub, nil
-	case oid.Equal(oidPublicKeyECDSA):
-		paramsDer := cryptobyte.String(params.FullBytes)
-		namedCurveOID := new(asn1.ObjectIdentifier)
-		if !paramsDer.ReadASN1ObjectIdentifier(namedCurveOID) {
-			return nil, errors.New("x509: invalid ECDSA parameters")
-		}
-		namedCurve := namedCurveFromOID(*namedCurveOID)
-		if namedCurve == nil {
-			return nil, errors.New("x509: unsupported elliptic curve")
-		}
-		x, y := elliptic.Unmarshal(namedCurve, der)
-		if x == nil {
-			return nil, errors.New("x509: failed to unmarshal elliptic curve point")
-		}
-		pub := &ecdsa.PublicKey{
-			Curve: namedCurve,
-			X:     x,
-			Y:     y,
-		}
-		return pub, nil
-	case oid.Equal(oidPublicKeyEd25519):
-		// RFC 8410, Section 3
-		// > For all of the OIDs, the parameters MUST be absent.
-		if len(params.FullBytes) != 0 {
-			return nil, errors.New("x509: Ed25519 key encoded with illegal parameters")
-		}
-		if len(der) != ed25519.PublicKeySize {
-			return nil, errors.New("x509: wrong Ed25519 public key size")
-		}
-		return ed25519.PublicKey(der), nil
-	case oid.Equal(oidPublicKeyX25519):
-		// RFC 8410, Section 3
-		// > For all of the OIDs, the parameters MUST be absent.
-		if len(params.FullBytes) != 0 {
-			return nil, errors.New("x509: X25519 key encoded with illegal parameters")
-		}
-		return ecdh.X25519().NewPublicKey(der)
-	case oid.Equal(oidPublicKeyDSA):
-		y := new(big.Int)
-		if !der.ReadASN1Integer(y) {
-			return nil, errors.New("x509: invalid DSA public key")
-		}
-		pub := &dsa.PublicKey{
-			Y: y,
-			Parameters: dsa.Parameters{
-				P: new(big.Int),
-				Q: new(big.Int),
-				G: new(big.Int),
-			},
-		}
-		paramsDer := cryptobyte.String(params.FullBytes)
-		if !paramsDer.ReadASN1(&paramsDer, cryptobyte_asn1.SEQUENCE) ||
-			!paramsDer.ReadASN1Integer(pub.Parameters.P) ||
-			!paramsDer.ReadASN1Integer(pub.Parameters.Q) ||
-			!paramsDer.ReadASN1Integer(pub.Parameters.G) {
-			return nil, errors.New("x509: invalid DSA parameters")
-		}
-		if pub.Y.Sign() <= 0 || pub.Parameters.P.Sign() <= 0 ||
-			pub.Parameters.Q.Sign() <= 0 || pub.Parameters.G.Sign() <= 0 {
-			return nil, errors.New("x509: zero or negative DSA parameter")
-		}
-		return pub, nil
-	default:
-		return nil, errors.New("x509: unknown public key algorithm")
-	}
-}
+// func parsePublicKey(keyData *publicKeyInfo) (any, error) {
+// 	oid := keyData.Algorithm.Algorithm
+// 	params := keyData.Algorithm.Parameters
+// 	der := cryptobyte.String(keyData.PublicKey.RightAlign())
+// 	switch {
+// 	case oid.Equal(oidPublicKeyEd25519):
+// 		// RFC 8410, Section 3
+// 		// > For all of the OIDs, the parameters MUST be absent.
+// 		if len(params.FullBytes) != 0 {
+// 			return nil, errors.New("x509: Ed25519 key encoded with illegal parameters")
+// 		}
+// 		if len(der) != ed25519.PublicKeySize {
+// 			return nil, errors.New("x509: wrong Ed25519 public key size")
+// 		}
+// 		return ed25519.PublicKey(der), nil
+// 	case oid.Equal(oidPublicKeyX25519):
+// 		// RFC 8410, Section 3
+// 		// > For all of the OIDs, the parameters MUST be absent.
+// 		if len(params.FullBytes) != 0 {
+// 			return nil, errors.New("x509: X25519 key encoded with illegal parameters")
+// 		}
+// 		return ecdh.X25519().NewPublicKey(der)
+// 	case oid.Equal(oidPublicKeyDSA):
+// 		y := new(big.Int)
+// 		if !der.ReadASN1Integer(y) {
+// 			return nil, errors.New("x509: invalid DSA public key")
+// 		}
+// 		pub := &dsa.PublicKey{
+// 			Y: y,
+// 			Parameters: dsa.Parameters{
+// 				P: new(big.Int),
+// 				Q: new(big.Int),
+// 				G: new(big.Int),
+// 			},
+// 		}
+// 		paramsDer := cryptobyte.String(params.FullBytes)
+// 		if !paramsDer.ReadASN1(&paramsDer, cryptobyte_asn1.SEQUENCE) ||
+// 			!paramsDer.ReadASN1Integer(pub.Parameters.P) ||
+// 			!paramsDer.ReadASN1Integer(pub.Parameters.Q) ||
+// 			!paramsDer.ReadASN1Integer(pub.Parameters.G) {
+// 			return nil, errors.New("x509: invalid DSA parameters")
+// 		}
+// 		if pub.Y.Sign() <= 0 || pub.Parameters.P.Sign() <= 0 ||
+// 			pub.Parameters.Q.Sign() <= 0 || pub.Parameters.G.Sign() <= 0 {
+// 			return nil, errors.New("x509: zero or negative DSA parameter")
+// 		}
+// 		return pub, nil
+// 	default:
+// 		return nil, errors.New("x509: unknown public key algorithm")
+// 	}
+// }
 
 func parseKeyUsageExtension(der cryptobyte.String) (KeyUsage, error) {
 	var usageBits asn1.BitString
@@ -881,6 +826,8 @@ func processExtensions(out *Certificate) error {
 var x509negativeserial = godebug.New("x509negativeserial")
 
 func parseCertificate(der []byte) (*Certificate, error) {
+	var ok bool
+
 	cert := &Certificate{}
 
 	input := cryptobyte.String(der)
@@ -950,7 +897,14 @@ func parseCertificate(der []byte) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	cert.SignatureAlgorithm = getSignatureAlgorithmFromAI(sigAI)
+	cert.SignatureAlgorithm, ok = crypto.SignatureAlgorithms[sigAI.Algorithm.String()]
+	if !ok {
+		return nil, fmt.Errorf("x509: signature algorithm %s is not implemented", sigAI.Algorithm.String())
+	}
+
+	if err := cert.SignatureAlgorithm.ValidatePKIXAlgorithmIdentifier(&sigAI); err != nil {
+		return nil, fmt.Errorf("x509: signature algorithm in tbsCert is invalid: %w", err)
+	}
 
 	var issuerSeq cryptobyte.String
 	if !tbs.ReadASN1Element(&issuerSeq, cryptobyte_asn1.SEQUENCE) {
@@ -999,19 +953,28 @@ func parseCertificate(der []byte) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	cert.PublicKeyAlgorithm = getPublicKeyAlgorithmFromOID(pkAI.Algorithm)
+
+	cert.PublicKeyAlgorithm, ok = crypto.PublicKeyAlgorithms[pkAI.Algorithm.String()]
+	if !ok {
+		return nil, fmt.Errorf("x509: public key algorithm %s is not implemented", pkAI.Algorithm.String())
+	}
+
 	var spk asn1.BitString
 	if !spki.ReadASN1BitString(&spk) {
 		return nil, errors.New("x509: malformed subjectPublicKey")
 	}
-	if cert.PublicKeyAlgorithm != UnknownPublicKeyAlgorithm {
-		cert.PublicKey, err = parsePublicKey(&publicKeyInfo{
-			Algorithm: pkAI,
-			PublicKey: spk,
-		})
-		if err != nil {
-			return nil, err
-		}
+
+	pkiParser, ok := cert.PublicKeyAlgorithm.(crypto.PKIXPublicKeyInfoParser)
+	if !ok {
+		return nil, fmt.Errorf("x509: public key algorithm %s does not implement crypto.PKIXPublicKeyInfoParser", cert.PublicKeyAlgorithm.GetPublicKeyAlgorithmName())
+	}
+
+	cert.PublicKey, err = pkiParser.ParsePKIXPublicKeyInfo(&pkix.PkixPublicKeyInfo{
+		AlgorithmIdentifier: pkAI,
+		PublicKey:           spk,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if cert.Version > 1 {
@@ -1103,6 +1066,8 @@ const x509v2Version = 1
 // ParseRevocationList parses a X509 v2 [Certificate] Revocation List from the given
 // ASN.1 DER data.
 func ParseRevocationList(der []byte) (*RevocationList, error) {
+	var ok bool
+
 	rl := &RevocationList{}
 
 	input := cryptobyte.String(der)
@@ -1157,7 +1122,15 @@ func ParseRevocationList(der []byte) (*RevocationList, error) {
 	if err != nil {
 		return nil, err
 	}
-	rl.SignatureAlgorithm = getSignatureAlgorithmFromAI(sigAI)
+
+	rl.SignatureAlgorithm, ok = crypto.SignatureAlgorithms[sigAI.Algorithm.String()]
+	if !ok {
+		return nil, errors.New("x509: unsupported signature algorithm")
+	}
+
+	if err := rl.SignatureAlgorithm.ValidatePKIXAlgorithmIdentifier(&sigAI); err != nil {
+		return nil, fmt.Errorf("x509: signature algorithm in tbsCert is invalid: %w", err)
+	}
 
 	var signature asn1.BitString
 	if !input.ReadASN1BitString(&signature) {

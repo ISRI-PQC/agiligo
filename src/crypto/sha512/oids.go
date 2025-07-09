@@ -1,0 +1,8 @@
+package sha512
+
+import "encoding/asn1"
+
+var (
+	OidSHA384 = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 2}
+	OidSHA512 = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 3}
+)

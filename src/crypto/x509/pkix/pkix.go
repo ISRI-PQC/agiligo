@@ -9,16 +9,57 @@ package pkix
 import (
 	"encoding/asn1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 )
+
+// pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
+// in RFC 3280.
+type PkixPublicKeyInfo struct {
+	Raw                 asn1.RawContent
+	AlgorithmIdentifier AlgorithmIdentifier
+	PublicKey           asn1.BitString
+}
 
 // AlgorithmIdentifier represents the ASN.1 structure of the same name. See RFC
 // 5280, section 4.1.1.2.
 type AlgorithmIdentifier struct {
 	Algorithm  asn1.ObjectIdentifier
 	Parameters asn1.RawValue `asn1:"optional"`
+}
+
+// MarshalPKIXPublicKey converts a public key to PKIX, ASN.1 DER form.
+// The encoded public key is a SubjectPublicKeyInfo structure
+// (see RFC 5280, Section 4.1).
+//
+// This kind of key is commonly encoded in PEM blocks of type "PUBLIC KEY".
+func MarshalPKIXPublicKeyInfo(keyBytes []byte, keyAlgorithm *AlgorithmIdentifier) ([]byte, error) {
+	pkix := PkixPublicKeyInfo{
+		AlgorithmIdentifier: *keyAlgorithm,
+		PublicKey: asn1.BitString{
+			Bytes:     keyBytes,
+			BitLength: 8 * len(keyBytes),
+		},
+	}
+
+	ret, _ := asn1.Marshal(pkix)
+	return ret, nil
+}
+
+// ParsePKIXPublicKey parses a public key in PKIX, ASN.1 DER form. The encoded
+// public key is a SubjectPublicKeyInfo structure (see RFC 5280, Section 4.1).
+//
+// This kind of key is commonly encoded in PEM blocks of type "PUBLIC KEY".
+func UnmarshalPKIXPublicKeyInfo(pkiBytes []byte) (pki *PkixPublicKeyInfo, err error) {
+	if rest, err := asn1.Unmarshal(pkiBytes, &pki); err != nil {
+		return nil, fmt.Errorf("pkix: failed to unmarshal public key: %w", err)
+	} else if len(rest) != 0 {
+		return nil, errors.New("pkix: trailing data after ASN.1 of public-key")
+	}
+
+	return pki, nil
 }
 
 type RDNSequence []RelativeDistinguishedNameSET

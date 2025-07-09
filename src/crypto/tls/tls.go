@@ -12,13 +12,13 @@ package tls
 // https://www.imperialviolet.org/2013/02/04/luckythirteen.html.
 
 import (
-	"bytes"
 	"context"
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/ed25519"
+	"crypto/pkcs8"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -317,33 +317,8 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error) {
 		return fail(err)
 	}
 
-	switch pub := x509Cert.PublicKey.(type) {
-	case *rsa.PublicKey:
-		priv, ok := cert.PrivateKey.(*rsa.PrivateKey)
-		if !ok {
-			return fail(errors.New("tls: private key type does not match public key type"))
-		}
-		if pub.N.Cmp(priv.N) != 0 {
-			return fail(errors.New("tls: private key does not match public key"))
-		}
-	case *ecdsa.PublicKey:
-		priv, ok := cert.PrivateKey.(*ecdsa.PrivateKey)
-		if !ok {
-			return fail(errors.New("tls: private key type does not match public key type"))
-		}
-		if pub.X.Cmp(priv.X) != 0 || pub.Y.Cmp(priv.Y) != 0 {
-			return fail(errors.New("tls: private key does not match public key"))
-		}
-	case ed25519.PublicKey:
-		priv, ok := cert.PrivateKey.(ed25519.PrivateKey)
-		if !ok {
-			return fail(errors.New("tls: private key type does not match public key type"))
-		}
-		if !bytes.Equal(priv.Public().(ed25519.PublicKey), pub) {
-			return fail(errors.New("tls: private key does not match public key"))
-		}
-	default:
-		return fail(errors.New("tls: unknown public key algorithm"))
+	if !cert.PrivateKey.Public().Equal(x509Cert.PublicKey) {
+		return fail(errors.New("tls: private key does not match public key"))
 	}
 
 	return cert, nil
@@ -353,18 +328,33 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error) {
 // PKCS #1 private keys by default, while OpenSSL 1.0.0 generates PKCS #8 keys.
 // OpenSSL ecparam generates SEC1 EC private keys for ECDSA. We try all three.
 func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
-	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
-		return key, nil
-	}
-	if key, err := x509.ParsePKCS8PrivateKey(der); err == nil {
-		switch key := key.(type) {
-		case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
-			return key, nil
-		default:
-			return nil, errors.New("tls: found unknown private key type in PKCS#8 wrapping")
+	// try PKCS8 first
+	var privKey pkcs8.PKCS8PrivateKey
+	if _, err := asn1.Unmarshal(der, &privKey); err != nil {
+		for _, pka := range crypto.PublicKeyAlgorithms {
+			if !pka.CanSign() {
+				continue
+			}
+
+			marshaler, ok := pka.(crypto.PKCS8PrivateKeyMarshaler)
+			if !ok {
+				continue
+			}
+
+			key, err := marshaler.UnmarshalPKCS8PrivateKey(der)
+			if err != nil {
+				return key, nil
+			}
+
+			// if err, continue
 		}
 	}
-	if key, err := x509.ParseECPrivateKey(der); err == nil {
+
+	if key, err := rsa.ParsePKCS1PrivateKey(der); err == nil {
+		return key, nil
+	}
+
+	if key, err := ecdsa.ParseECPrivateKey(der); err == nil {
 		return key, nil
 	}
 

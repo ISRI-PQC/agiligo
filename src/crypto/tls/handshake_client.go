@@ -1090,7 +1090,7 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 			c.sendAlert(alertBadCertificate)
 			return errors.New("tls: failed to parse certificate from server: " + err.Error())
 		}
-		if cert.cert.PublicKeyAlgorithm == x509.RSA {
+		if cert.cert.PublicKeyAlgorithm.GetPublicKeyAlgorithmOID().Equal(rsa.OidPublicKeyRSA) {
 			n := cert.cert.PublicKey.(*rsa.PublicKey).N.BitLen()
 			if max, ok := checkKeySize(n); !ok {
 				c.sendAlert(alertBadCertificate)

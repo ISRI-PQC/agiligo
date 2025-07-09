@@ -257,7 +257,7 @@ func selectSignatureScheme(vers uint16, c *Certificate, peerAlgs []SignatureSche
 // an unsupported private key.
 func unsupportedCertificateError(cert *Certificate) error {
 	switch cert.PrivateKey.(type) {
-	case rsa.PrivateKey, ecdsa.PrivateKey:
+	case *rsa.PrivateKey, *ecdsa.PrivateKey:
 		return fmt.Errorf("tls: unsupported certificate: private key is %T, expected *%T",
 			cert.PrivateKey, cert.PrivateKey)
 	case *ed25519.PrivateKey:

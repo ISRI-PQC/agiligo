@@ -18,7 +18,6 @@ package ecdsa
 
 import (
 	"crypto"
-	"crypto/ecdh"
 	"crypto/elliptic"
 	"crypto/internal/boring"
 	"crypto/internal/boring/bbig"
@@ -40,23 +39,6 @@ import (
 type PublicKey struct {
 	elliptic.Curve
 	X, Y *big.Int
-}
-
-// Any methods implemented on PublicKey might need to also be implemented on
-// PrivateKey, as the latter embeds the former and will expose its methods.
-
-// ECDH returns k as a [ecdh.PublicKey]. It returns an error if the key is
-// invalid according to the definition of [ecdh.Curve.NewPublicKey], or if the
-// Curve is not supported by crypto/ecdh.
-func (k *PublicKey) ECDH() (*ecdh.PublicKey, error) {
-	c := curveToECDH(k.Curve)
-	if c == nil {
-		return nil, errors.New("ecdsa: unsupported curve by crypto/ecdh")
-	}
-	if !k.Curve.IsOnCurve(k.X, k.Y) {
-		return nil, errors.New("ecdsa: invalid public key")
-	}
-	return c.NewPublicKey(elliptic.Marshal(k.Curve, k.X, k.Y))
 }
 
 // Equal reports whether pub and x have the same value.
@@ -83,33 +65,50 @@ type PrivateKey struct {
 	D *big.Int
 }
 
-// ECDH returns k as a [ecdh.PrivateKey]. It returns an error if the key is
-// invalid according to the definition of [ecdh.Curve.NewPrivateKey], or if the
-// Curve is not supported by [crypto/ecdh].
-func (k *PrivateKey) ECDH() (*ecdh.PrivateKey, error) {
-	c := curveToECDH(k.Curve)
-	if c == nil {
-		return nil, errors.New("ecdsa: unsupported curve by crypto/ecdh")
-	}
-	size := (k.Curve.Params().N.BitLen() + 7) / 8
-	if k.D.BitLen() > size*8 {
-		return nil, errors.New("ecdsa: invalid private key")
-	}
-	return c.NewPrivateKey(k.D.FillBytes(make([]byte, size)))
-}
+// // Any methods implemented on PublicKey might need to also be implemented on
+// // PrivateKey, as the latter embeds the former and will expose its methods.
 
-func curveToECDH(c elliptic.Curve) ecdh.Curve {
-	switch c {
-	case elliptic.P256():
-		return ecdh.P256()
-	case elliptic.P384():
-		return ecdh.P384()
-	case elliptic.P521():
-		return ecdh.P521()
-	default:
-		return nil
-	}
-}
+// // ECDH returns k as a [ecdh.PublicKey]. It returns an error if the key is
+// // invalid according to the definition of [ecdh.Curve.NewPublicKey], or if the
+// // Curve is not supported by crypto/ecdh.
+// func (k *PublicKey) ECDH() (*ecdh.PublicKey, error) {
+// 	c := curveToECDH(k.Curve)
+// 	if c == nil {
+// 		return nil, errors.New("ecdsa: unsupported curve by crypto/ecdh")
+// 	}
+// 	if !k.Curve.IsOnCurve(k.X, k.Y) {
+// 		return nil, errors.New("ecdsa: invalid public key")
+// 	}
+// 	return c.NewPublicKey(elliptic.Marshal(k.Curve, k.X, k.Y))
+// }
+
+// // ECDH returns k as a [ecdh.PrivateKey]. It returns an error if the key is
+// // invalid according to the definition of [ecdh.Curve.NewPrivateKey], or if the
+// // Curve is not supported by [crypto/ecdh].
+// func (k *PrivateKey) ECDH() (*ecdh.PrivateKey, error) {
+// 	c := curveToECDH(k.Curve)
+// 	if c == nil {
+// 		return nil, errors.New("ecdsa: unsupported curve by crypto/ecdh")
+// 	}
+// 	size := (k.Curve.Params().N.BitLen() + 7) / 8
+// 	if k.D.BitLen() > size*8 {
+// 		return nil, errors.New("ecdsa: invalid private key")
+// 	}
+// 	return c.NewPrivateKey(k.D.FillBytes(make([]byte, size)))
+// }
+
+// func curveToECDH(c elliptic.Curve) ecdh.Curve {
+// 	switch c {
+// 	case elliptic.P256():
+// 		return ecdh.P256()
+// 	case elliptic.P384():
+// 		return ecdh.P384()
+// 	case elliptic.P521():
+// 		return ecdh.P521()
+// 	default:
+// 		return nil
+// 	}
+// }
 
 // Public returns the public key corresponding to priv.
 func (priv *PrivateKey) Public() crypto.PublicKey {
