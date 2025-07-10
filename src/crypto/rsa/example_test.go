@@ -8,10 +8,11 @@ import (
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/pkcs8"
 	"crypto/rand"
 	"crypto/rsa"
+	. "crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -26,7 +27,7 @@ func ExampleGenerateKey() {
 		return
 	}
 
-	der, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	der, err := pkcs8.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshalling RSA private key: %s", err)
 		return
@@ -69,7 +70,7 @@ UjmopwKBgAqB2KYYMUqAOvYcBnEfLDmyZv9BTVNHbR2lKkMYqv5LlvDaBxVfilE0
 2riO4p6BaAdvzXjKeRrGNEKoHNBpOSfYCOM16NjL8hIZB1CaV3WbT5oY+jp7Mzd5
 7d56RZOE+ERK2uz/7JX9VSsM/LbH9pJibd4e8mikDS9ntciqOH/3
 -----END RSA TESTING KEY-----`, "TESTING KEY", "PRIVATE KEY")))
-	testRSA2048, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+	testRSA2048, _ := ParsePKCS1PrivateKey(block.Bytes)
 
 	fmt.Println("Private key bit size:", testRSA2048.N.BitLen())
 }

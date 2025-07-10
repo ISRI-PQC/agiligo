@@ -11,8 +11,8 @@ import (
 	"crypto/ecdh"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls/internal/fips140tls"
-	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -1772,7 +1772,7 @@ func TestMultipleCertificates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := clientState.PeerCertificates[0].PublicKeyAlgorithm; got != x509.RSA {
+	if got := clientState.PeerCertificates[0].PublicKeyAlgorithm; !got.GetPublicKeyAlgorithmOID().Equal(rsa.OidPublicKeyRSA) {
 		t.Errorf("expected RSA certificate, got %v", got)
 	}
 }

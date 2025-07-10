@@ -2,6 +2,8 @@ package ecdsa
 
 import (
 	"crypto/elliptic"
+	"crypto/pkcs8"
+	"crypto/rsa"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -68,10 +70,17 @@ func marshalECPrivateKeyWithOID(key *PrivateKey, oid asn1.ObjectIdentifier) ([]b
 func parseECPrivateKey(namedCurveOID *asn1.ObjectIdentifier, der []byte) (key *PrivateKey, err error) {
 	var privKey ecPrivateKey
 	if _, err := asn1.Unmarshal(der, &privKey); err != nil {
-		return nil, errors.New("x509: failed to parse EC private key: " + err.Error())
+		if _, err := asn1.Unmarshal(der, &pkcs8.PKCS8PrivateKey{}); err == nil {
+			return nil, errors.New("x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)")
+		}
+		if _, err := asn1.Unmarshal(der, &rsa.Pkcs1PrivateKey{}); err == nil {
+			return nil, errors.New("x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)")
+		}
+
+		return nil, errors.New("ecdsa: failed to parse EC private key: " + err.Error())
 	}
 	if privKey.Version != ecPrivKeyVersion {
-		return nil, fmt.Errorf("x509: unknown EC private key version %d", privKey.Version)
+		return nil, fmt.Errorf("ecdsa: unknown EC private key version %d", privKey.Version)
 	}
 
 	var curve elliptic.Curve
@@ -81,13 +90,13 @@ func parseECPrivateKey(namedCurveOID *asn1.ObjectIdentifier, der []byte) (key *P
 		curve = elliptic.NamedCurveFromOID(privKey.NamedCurveOID)
 	}
 	if curve == nil {
-		return nil, errors.New("x509: unknown elliptic curve")
+		return nil, errors.New("ecdsa: unknown elliptic curve")
 	}
 
 	k := new(big.Int).SetBytes(privKey.PrivateKey)
 	curveOrder := curve.Params().N
 	if k.Cmp(curveOrder) >= 0 {
-		return nil, errors.New("x509: invalid elliptic curve private key value")
+		return nil, errors.New("ecdsa: invalid elliptic curve private key value")
 	}
 	priv := new(PrivateKey)
 	priv.Curve = curve
@@ -99,7 +108,7 @@ func parseECPrivateKey(namedCurveOID *asn1.ObjectIdentifier, der []byte) (key *P
 	// according to [elliptic], but this code will ignore it.
 	for len(privKey.PrivateKey) > len(privateKey) {
 		if privKey.PrivateKey[0] != 0 {
-			return nil, errors.New("x509: invalid private key length")
+			return nil, errors.New("ecdsa: invalid private key length")
 		}
 		privKey.PrivateKey = privKey.PrivateKey[1:]
 	}

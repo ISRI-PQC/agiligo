@@ -93,7 +93,7 @@ func (sa *Ed25519SignatureAlgorithm) ValidatePKIXAlgorithmIdentifier(ai *pkix.Al
 // PKCS8PrivateKeyMarshaler interface implementation
 
 func (pka *Ed25519PublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
-	Ed25519Key, ok := sk.(*PrivateKey)
+	Ed25519Key, ok := sk.(PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("Ed25519: %w", crypto.ErrMismatchedKey)
 	}

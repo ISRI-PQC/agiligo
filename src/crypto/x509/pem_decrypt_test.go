@@ -7,6 +7,7 @@ package x509
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/pem"
 	"strings"
@@ -25,7 +26,7 @@ func TestDecrypt(t *testing.T) {
 			t.Error("decrypt failed: ", err)
 			continue
 		}
-		if _, err := ParsePKCS1PrivateKey(der); err != nil {
+		if _, err := rsa.ParsePKCS1PrivateKey(der); err != nil {
 			t.Error("invalid private key: ", err)
 		}
 		plainDER, err := base64.StdEncoding.DecodeString(data.plainDER)

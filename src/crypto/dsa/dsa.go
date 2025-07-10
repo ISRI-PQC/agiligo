@@ -14,12 +14,14 @@
 package dsa
 
 import (
+	"crypto"
 	"errors"
 	"io"
 	"math/big"
 
 	"crypto/internal/fips140only"
 	"crypto/internal/randutil"
+	"crypto/subtle"
 )
 
 // Parameters represents the domain parameters for a key. These parameters can
@@ -34,10 +36,38 @@ type PublicKey struct {
 	Y *big.Int
 }
 
+func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
+	xx, ok := x.(*PublicKey)
+	if !ok {
+		return false
+	}
+	return bigIntEqual(pub.Y, xx.Y) &&
+		bigIntEqual(pub.P, xx.P) &&
+		bigIntEqual(pub.Q, xx.Q) &&
+		bigIntEqual(pub.G, xx.G)
+}
+
 // PrivateKey represents a DSA private key.
 type PrivateKey struct {
 	PublicKey
 	X *big.Int
+}
+
+// Public returns the public key corresponding to priv.
+func (priv *PrivateKey) Public() crypto.PublicKey {
+	return &priv.PublicKey
+}
+
+func (priv *PrivateKey) Equal(x crypto.PrivateKey) bool {
+	xx, ok := x.(*PrivateKey)
+	if !ok {
+		return false
+	}
+	if !priv.PublicKey.Equal(&xx.PublicKey) || !bigIntEqual(priv.X, xx.X) {
+		return false
+	}
+
+	return true
 }
 
 // ErrInvalidPublicKey results when a public key is not usable by this code.
@@ -323,4 +353,10 @@ func Verify(pub *PublicKey, hash []byte, r, s *big.Int) bool {
 	v.Mod(v, pub.Q)
 
 	return v.Cmp(r) == 0
+}
+
+// bigIntEqual reports whether a and b are equal leaking only their bit length
+// through timing side-channels.
+func bigIntEqual(a, b *big.Int) bool {
+	return subtle.ConstantTimeCompare(a.Bytes(), b.Bytes()) == 1
 }

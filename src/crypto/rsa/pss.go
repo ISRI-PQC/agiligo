@@ -18,9 +18,9 @@ var (
 	PssParametersSHA512 = asn1.RawValue{FullBytes: []byte{48, 52, 160, 15, 48, 13, 6, 9, 96, 134, 72, 1, 101, 3, 4, 2, 3, 5, 0, 161, 28, 48, 26, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 8, 48, 13, 6, 9, 96, 134, 72, 1, 101, 3, 4, 2, 3, 5, 0, 162, 3, 2, 1, 64}}
 )
 
-// pssParameters reflects the parameters in an AlgorithmIdentifier that
+// PssParameters reflects the parameters in an AlgorithmIdentifier that
 // specifies RSA PSS. See RFC 3447, Appendix A.2.3.
-type pssParameters struct {
+type PssParameters struct {
 	// The following three fields are not marked as
 	// optional because the default values specify SHA-1,
 	// which is no longer suitable for use in signatures.

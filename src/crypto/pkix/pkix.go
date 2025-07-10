@@ -48,12 +48,22 @@ func MarshalPKIXPublicKeyInfo(keyBytes []byte, keyAlgorithm *AlgorithmIdentifier
 	return ret, nil
 }
 
+// pkcs1PublicKey reflects the ASN.1 structure of a PKCS #1 public key.
+type pkcs1PublicKey struct {
+	N *big.Int
+	E int
+}
+
 // ParsePKIXPublicKey parses a public key in PKIX, ASN.1 DER form. The encoded
 // public key is a SubjectPublicKeyInfo structure (see RFC 5280, Section 4.1).
 //
 // This kind of key is commonly encoded in PEM blocks of type "PUBLIC KEY".
 func UnmarshalPKIXPublicKeyInfo(pkiBytes []byte) (pki *PkixPublicKeyInfo, err error) {
-	if rest, err := asn1.Unmarshal(pkiBytes, &pki); err != nil {
+	pki = new(PkixPublicKeyInfo)
+	if rest, err := asn1.Unmarshal(pkiBytes, pki); err != nil {
+		if _, err := asn1.Unmarshal(pkiBytes, &pkcs1PublicKey{}); err == nil {
+			return nil, errors.New("x509: failed to parse public key (use rsa.ParsePKCS1PublicKey instead for this key format)")
+		}
 		return nil, fmt.Errorf("pkix: failed to unmarshal public key: %w", err)
 	} else if len(rest) != 0 {
 		return nil, errors.New("pkix: trailing data after ASN.1 of public-key")

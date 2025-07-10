@@ -8,8 +8,8 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/pkix"
+	"crypto/rand"
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
@@ -1761,7 +1761,7 @@ type trustGraphDescription struct {
 	Graph []trustGraphEdge
 }
 
-func genCertEdge(t *testing.T, subject string, key crypto.Signer, mutateTmpl func(*Certificate), certType int, issuer *Certificate, signer crypto.Signer) *Certificate {
+func genCertEdge(t *testing.T, subject string, key crypto.PrivateKey, mutateTmpl func(*Certificate), certType int, issuer *Certificate, signer crypto.PrivateKey) *Certificate {
 	t.Helper()
 
 	serial, err := rand.Int(rand.Reader, big.NewInt(100))
@@ -1804,7 +1804,7 @@ func buildTrustGraph(t *testing.T, d trustGraphDescription) (*CertPool, *CertPoo
 	t.Helper()
 
 	certs := map[string]*Certificate{}
-	keys := map[string]crypto.Signer{}
+	keys := map[string]crypto.PrivateKey{}
 	rootPool := NewCertPool()
 	for _, r := range d.Roots {
 		k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)

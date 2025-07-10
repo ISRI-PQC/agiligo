@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/pkcs8"
+	"crypto/pkix"
 	"crypto/sha256"
 	"crypto/sha512"
-	"crypto/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -21,6 +21,7 @@ var (
 	MD2WithRSA       *RSASignatureAlgorithm
 	MD5WithRSA       *RSASignatureAlgorithm
 	SHA1WithRSA      *RSASignatureAlgorithm
+	ISOSHA1WithRSA   *RSASignatureAlgorithm
 	SHA256WithRSA    *RSASignatureAlgorithm
 	SHA384WithRSA    *RSASignatureAlgorithm
 	SHA512WithRSA    *RSASignatureAlgorithm
@@ -31,7 +32,6 @@ var (
 
 func init() {
 	crypto.RegisterPublicKeyAlgorithm(RSAPKA.GetPublicKeyAlgorithmOID(), RSAPKA)
-
 	MD5WithRSA = &RSASignatureAlgorithm{
 		RSAPublicKeyAlgorithm: RSAPKA,
 		hash:                  crypto.MD5,
@@ -39,6 +39,14 @@ func init() {
 		name:                  "MD5-RSA",
 	}
 	crypto.RegisterSignatureAlgorithm(MD5WithRSA.oid, MD5WithRSA)
+
+	ISOSHA1WithRSA = &RSASignatureAlgorithm{
+		RSAPublicKeyAlgorithm: RSAPKA,
+		hash:                  crypto.SHA1,
+		oid:                   OidISOSignatureSHA1WithRSA,
+		name:                  "ISO-SHA1-RSA",
+	}
+	crypto.RegisterSignatureAlgorithm(ISOSHA1WithRSA.oid, ISOSHA1WithRSA)
 
 	SHA1WithRSA = &RSASignatureAlgorithm{
 		RSAPublicKeyAlgorithm: RSAPKA,
@@ -294,7 +302,7 @@ func (sa *RSASignatureAlgorithm) Sign(rand io.Reader, message []byte, priv crypt
 	}
 }
 
-func (sa *RSASignatureAlgorithm) Verify(signedData []byte, signature []byte, pk crypto.PublicKey) error {
+func (sa *RSASignatureAlgorithm) Verify(message []byte, signature []byte, pk crypto.PublicKey) error {
 	rsaKey, ok := pk.(*PublicKey)
 	if !ok {
 		return fmt.Errorf("rsa: %w", crypto.ErrMismatchedKey)
@@ -306,13 +314,13 @@ func (sa *RSASignatureAlgorithm) Verify(signedData []byte, signature []byte, pk 
 		return fmt.Errorf("rsa: %w", crypto.ErrAlgorithmNotSupported)
 	}
 	h := hashType.New()
-	h.Write(signedData)
-	signedData = h.Sum(nil)
+	h.Write(message)
+	digest := h.Sum(nil)
 
 	if sa.pssp != nil {
-		return VerifyPSS(rsaKey, hashType, signedData, signature, &PSSOptions{SaltLength: PSSSaltLengthEqualsHash, Hash: hashType})
+		return VerifyPSS(rsaKey, hashType, digest, signature, &PSSOptions{SaltLength: PSSSaltLengthEqualsHash, Hash: hashType})
 	} else {
-		return VerifyPKCS1v15(rsaKey, hashType, signedData, signature)
+		return VerifyPKCS1v15(rsaKey, hashType, digest, signature)
 	}
 }
 
@@ -338,7 +346,7 @@ func (sa *RSASignatureAlgorithm) ValidatePKIXAlgorithmIdentifier(ai *pkix.Algori
 		// RSA PSS is special because it encodes important parameters
 		// in the Parameters.
 
-		var params pssParameters
+		var params PssParameters
 		if _, err := asn1.Unmarshal(ai.Parameters.FullBytes, &params); err != nil {
 			return crypto.ErrAlgorithmNotSupported
 		}

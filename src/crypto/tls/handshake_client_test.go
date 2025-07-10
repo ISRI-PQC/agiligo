@@ -7,13 +7,15 @@ package tls
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/pkcs8"
+	"crypto/pkix"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls/internal/fips140tls"
 	"crypto/x509"
-	"crypto/pkix"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
@@ -138,9 +140,8 @@ type clientTest struct {
 	// cert, if not empty, contains a DER-encoded certificate for the
 	// reference server.
 	cert []byte
-	// key, if not nil, contains either a *rsa.PrivateKey, ed25519.PrivateKey or
-	// *ecdsa.PrivateKey which is the private key for the reference server.
-	key any
+	// key is the private key for the reference server.
+	key crypto.PrivateKey
 	// extensions, if not nil, contains a list of extension data to be returned
 	// from the ServerHello. The data should be in standard TLS format with
 	// a 2-byte uint16 type, 2-byte data length, followed by the extension data.
@@ -177,11 +178,11 @@ func (test *clientTest) connFromCommand() (conn *recordingConn, child *exec.Cmd,
 	certPath := tempFile(string(cert))
 	defer os.Remove(certPath)
 
-	var key any = testRSAPrivateKey
+	var key crypto.PrivateKey = testRSAPrivateKey
 	if test.key != nil {
 		key = test.key
 	}
-	derBytes, err := x509.MarshalPKCS8PrivateKey(key)
+	derBytes, err := pkcs8.MarshalPKCS8PrivateKey(key)
 	if err != nil {
 		panic(err)
 	}

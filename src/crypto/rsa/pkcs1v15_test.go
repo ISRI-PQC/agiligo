@@ -11,7 +11,6 @@ import (
 	. "crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
@@ -289,7 +288,7 @@ func TestShortSessionKey(t *testing.T) {
 
 func parsePublicKey(s string) *PublicKey {
 	p, _ := pem.Decode([]byte(s))
-	k, err := x509.ParsePKCS1PublicKey(p.Bytes)
+	k, err := ParsePKCS1PublicKey(p.Bytes)
 	if err != nil {
 		panic(err)
 	}

@@ -6,8 +6,8 @@ package rsa_test
 
 import (
 	"crypto"
-	"crypto/rsa"
-	"crypto/x509"
+	"crypto/pkcs8"
+	. "crypto/rsa"
 	"testing"
 )
 
@@ -20,18 +20,18 @@ func TestEqual(t *testing.T) {
 	if !public.Equal(public) {
 		t.Errorf("public key is not equal to itself: %v", public)
 	}
-	if !public.Equal(crypto.Signer(private).Public().(*rsa.PublicKey)) {
+	if !public.Equal(crypto.Signer(private).Public().(*PublicKey)) {
 		t.Errorf("private.Public() is not Equal to public: %q", public)
 	}
 	if !private.Equal(private) {
 		t.Errorf("private key is not equal to itself: %v", private)
 	}
 
-	enc, err := x509.MarshalPKCS8PrivateKey(private)
+	enc, err := pkcs8.MarshalPKCS8PrivateKey(private)
 	if err != nil {
 		t.Fatal(err)
 	}
-	decoded, err := x509.ParsePKCS8PrivateKey(enc)
+	decoded, err := pkcs8.UnmarshalPKCS8PrivateKey(enc)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,8 +8,8 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/pkix"
+	"crypto/rand"
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
@@ -1640,6 +1640,7 @@ func makeConstraintsCACert(constraints constraintsSpec, name string, key *ecdsa.
 		KeyUsage:              KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
+		SignatureAlgorithm:    ecdsa.ECDSAWithSHA256,
 	}
 
 	if err := addConstraintsToTemplate(constraints, template); err != nil {

@@ -33,7 +33,7 @@ func init() {
 
 	ECDSAWithSHA256 = &ECDSASignatureAlgorithm{
 		ECDSAPublicKeyAlgorithm: ECDSAPKA,
-		hash:                    crypto.MD5,
+		hash:                    crypto.SHA256,
 		oid:                     OidSignatureECDSAWithSHA256,
 		name:                    "ECDSA-SHA256",
 	}
@@ -41,7 +41,7 @@ func init() {
 
 	ECDSAWithSHA384 = &ECDSASignatureAlgorithm{
 		ECDSAPublicKeyAlgorithm: ECDSAPKA,
-		hash:                    crypto.SHA1,
+		hash:                    crypto.SHA384,
 		oid:                     OidSignatureECDSAWithSHA384,
 		name:                    "ECDSA-SHA384",
 	}
@@ -49,7 +49,7 @@ func init() {
 
 	ECDSAWithSHA512 = &ECDSASignatureAlgorithm{
 		ECDSAPublicKeyAlgorithm: ECDSAPKA,
-		hash:                    crypto.SHA256,
+		hash:                    crypto.SHA512,
 		oid:                     OidSignatureECDSAWithSHA512,
 		name:                    "ECDSA-SHA512",
 	}
@@ -74,6 +74,7 @@ func (pka *ECDSAPublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
 func (pka *ECDSAPublicKeyAlgorithm) CanSign() bool {
 	return true
 }
+
 // func (pka *ECDSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
 // 	ecdsaKey, ok := pk.(*PublicKey)
 // 	if !ok {
@@ -251,7 +252,7 @@ func (sa *ECDSASignatureAlgorithm) Sign(rand io.Reader, message []byte, priv cry
 	return SignASN1(rand, ecdsaKey, digest)
 }
 
-func (sa *ECDSASignatureAlgorithm) Verify(signed []byte, signature []byte, pk crypto.PublicKey) error {
+func (sa *ECDSASignatureAlgorithm) Verify(message []byte, signature []byte, pk crypto.PublicKey) error {
 	ecdsaKey, ok := pk.(*PublicKey)
 	if !ok {
 		return fmt.Errorf("ecdsa: %w", crypto.ErrMismatchedKey)
@@ -263,10 +264,10 @@ func (sa *ECDSASignatureAlgorithm) Verify(signed []byte, signature []byte, pk cr
 		return fmt.Errorf("ecdsa: %w", crypto.ErrAlgorithmNotSupported)
 	}
 	h := hashType.New()
-	h.Write(signed)
-	signed = h.Sum(nil)
+	h.Write(message)
+	digest := h.Sum(nil)
 
-	if !VerifyASN1(ecdsaKey, signed, signature) {
+	if !VerifyASN1(ecdsaKey, digest, signature) {
 		return errors.New("ecdsa: ECDSA verification failure")
 	}
 

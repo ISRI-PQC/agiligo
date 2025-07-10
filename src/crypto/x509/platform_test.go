@@ -55,7 +55,7 @@ func TestPlatformVerifier(t *testing.T) {
 		t.Fatalf("failed to read test key: %s", err)
 	}
 	b, _ = pem.Decode(der)
-	testRootKey, err := ParseECPrivateKey(b.Bytes)
+	testRootKey, err := ecdsa.ParseECPrivateKey(b.Bytes)
 	if err != nil {
 		t.Fatalf("failed to parse test key: %s", err)
 	}

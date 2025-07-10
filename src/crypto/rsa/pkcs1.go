@@ -13,8 +13,8 @@ import (
 	"math/big"
 )
 
-// pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.
-type pkcs1PrivateKey struct {
+// Pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.
+type Pkcs1PrivateKey struct {
 	Version int
 	N       *big.Int
 	E       int
@@ -53,7 +53,7 @@ var x509rsacrt = godebug.New("x509rsacrt")
 // Before Go 1.24, the CRT parameters were ignored and recomputed. To restore
 // the old behavior, use the GODEBUG=x509rsacrt=0 environment variable.
 func ParsePKCS1PrivateKey(der []byte) (*PrivateKey, error) {
-	var priv pkcs1PrivateKey
+	var priv Pkcs1PrivateKey
 	rest, err := asn1.Unmarshal(der, &priv)
 	if len(rest) > 0 {
 		return nil, asn1.SyntaxError{Msg: "trailing data"}
@@ -133,7 +133,7 @@ func MarshalPKCS1PrivateKey(key *PrivateKey) []byte {
 		version = 1
 	}
 
-	priv := pkcs1PrivateKey{
+	priv := Pkcs1PrivateKey{
 		Version: version,
 		N:       key.N,
 		E:       key.PublicKey.E,

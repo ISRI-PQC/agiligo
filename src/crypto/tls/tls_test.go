@@ -12,10 +12,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/internal/hpke"
+	"crypto/pkcs8"
+	"crypto/pkix"
 	"crypto/rand"
 	"crypto/tls/internal/fips140tls"
 	"crypto/x509"
-	"crypto/pkix"
 	"encoding/asn1"
 	"encoding/json"
 	"encoding/pem"
@@ -1718,7 +1719,7 @@ func TestPKCS1OnlyCert(t *testing.T) {
 	clientConfig := testConfig.Clone()
 	clientConfig.Certificates = []Certificate{{
 		Certificate: [][]byte{testRSACertificate},
-		PrivateKey:  brokenSigner{testRSAPrivateKey},
+		PrivateKey:  testRSAPrivateKey,
 	}}
 	serverConfig := testConfig.Clone()
 	serverConfig.MaxVersion = VersionTLS12 // TLS 1.3 doesn't support PKCS #1 v1.5
@@ -2035,7 +2036,7 @@ func TestX509KeyPairPopulateCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	keyDER, err := pkcs8.MarshalPKCS8PrivateKey(key)
 	if err != nil {
 		t.Fatal(err)
 	}

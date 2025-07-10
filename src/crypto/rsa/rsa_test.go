@@ -10,12 +10,15 @@ import (
 	"crypto"
 	"crypto/internal/boring"
 	"crypto/internal/cryptotest"
+	"crypto/pkcs8"
+	"crypto/pkix"
+	"crypto/pkix/pkixparser"
 	"crypto/rand"
 	. "crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-	"crypto/x509"
+	"encoding/asn1"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -370,11 +373,11 @@ func testEverything(t *testing.T, priv *PrivateKey) {
 		t.Errorf("DecryptPKCS1v15 accepted a long ciphertext")
 	}
 
-	der, err := x509.MarshalPKCS8PrivateKey(priv)
+	der, err := pkcs8.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
 		t.Errorf("MarshalPKCS8PrivateKey: %v", err)
 	}
-	key, err := x509.ParsePKCS8PrivateKey(der)
+	key, err := pkcs8.UnmarshalPKCS8PrivateKey(der)
 	if err != nil {
 		t.Errorf("ParsePKCS8PrivateKey: %v", err)
 	}
@@ -382,14 +385,26 @@ func testEverything(t *testing.T, priv *PrivateKey) {
 		t.Errorf("private key mismatch")
 	}
 
-	der, err = x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	pki, err := pkixparser.GetPKIXPublicKeyInfoFromPublicKey(&priv.PublicKey)
 	if err != nil {
-		t.Errorf("MarshalPKIXPublicKey: %v", err)
+		t.Errorf("GetPKIXPublicKeyInfoFromPublicKey: %v", err)
 	}
-	pub, err := x509.ParsePKIXPublicKey(der)
+
+	der, err = asn1.Marshal(*pki)
 	if err != nil {
-		t.Errorf("ParsePKIXPublicKey: %v", err)
+		t.Errorf("Marshal PKIXPublicKeyInfo: %v", err)
 	}
+
+	pki, err = pkix.UnmarshalPKIXPublicKeyInfo(der)
+	if err != nil {
+		t.Errorf("UnmarshalPKIXPublicKeyInfo: %v", err)
+	}
+
+	pub, err := pkixparser.GetPublicKeyFromPKIXPublicKeyInfo(pki)
+	if err != nil {
+		t.Errorf("GetPublicKeyFromPKIXPublicKeyInfo: %v", err)
+	}
+
 	if !pub.(*PublicKey).Equal(&priv.PublicKey) {
 		t.Errorf("public key mismatch")
 	}
@@ -431,13 +446,13 @@ func testingKey(s string) string { return strings.ReplaceAll(s, "TESTING KEY", "
 func parseKey(s string) *PrivateKey {
 	p, _ := pem.Decode([]byte(s))
 	if p.Type == "PRIVATE KEY" {
-		k, err := x509.ParsePKCS8PrivateKey(p.Bytes)
+		k, err := pkcs8.UnmarshalPKCS8PrivateKey(p.Bytes)
 		if err != nil {
 			panic(err)
 		}
 		return k.(*PrivateKey)
 	}
-	k, err := x509.ParsePKCS1PrivateKey(p.Bytes)
+	k, err := ParsePKCS1PrivateKey(p.Bytes)
 	if err != nil {
 		panic(err)
 	}
@@ -777,7 +792,7 @@ func BenchmarkParsePKCS8PrivateKey(b *testing.B) {
 		p, _ := pem.Decode([]byte(test2048KeyPEM))
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if _, err := x509.ParsePKCS8PrivateKey(p.Bytes); err != nil {
+			if _, err := pkcs8.UnmarshalPKCS8PrivateKey(p.Bytes); err != nil {
 				b.Fatal(err)
 			}
 		}

@@ -6,7 +6,7 @@ package fipstest
 
 import (
 	"crypto/rand"
-	"crypto/x509"
+	cryptorsa "crypto/rsa"
 	"encoding/pem"
 	"fmt"
 	"internal/testenv"
@@ -120,7 +120,7 @@ UjmopwKBgAqB2KYYMUqAOvYcBnEfLDmyZv9BTVNHbR2lKkMYqv5LlvDaBxVfilE0
 2riO4p6BaAdvzXjKeRrGNEKoHNBpOSfYCOM16NjL8hIZB1CaV3WbT5oY+jp7Mzd5
 7d56RZOE+ERK2uz/7JX9VSsM/LbH9pJibd4e8mikDS9ntciqOH/3
 -----END RSA TESTING KEY-----`, "TESTING KEY", "PRIVATE KEY")))
-	if _, err := x509.ParsePKCS1PrivateKey(block.Bytes); err != nil {
+	if _, err := cryptorsa.ParsePKCS1PrivateKey(block.Bytes); err != nil {
 		t.Fatal(err)
 	}
 	t.Log("completed successfully")

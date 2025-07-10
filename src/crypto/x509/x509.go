@@ -23,10 +23,10 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	cryptorand "crypto/rand"
-	"crypto/sha1"
 	"crypto/pkix"
 	"crypto/pkix/pkixparser"
+	cryptorand "crypto/rand"
+	"crypto/sha1"
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
@@ -41,7 +41,6 @@ import (
 
 	// Explicitly import these for their crypto.RegisterHash init side-effects.
 	// Keep these as blank imports, even if they're imported above.
-	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 
@@ -382,10 +381,14 @@ type PolicyMapping struct {
 // involves algorithms that are not currently implemented.
 var ErrUnsupportedAlgorithm = errors.New("x509: cannot verify signature: algorithm unimplemented")
 
-// An InsecureSignatureAlgorithmError indicates that the [SignatureAlgorithm] used to
+// An InsecureAlgorithmError indicates that the [SignatureAlgorithm] used to
 // generate the signature is not secure, and the signature has been rejected.
-func InsecureSignatureAlgorithmError(algo crypto.SignatureAlgorithm) error {
-	return fmt.Errorf("x509: insecure algorithm %v", algo.GetSignatureAlgorithmName())
+type InsecureAlgorithmError struct {
+	crypto.SignatureAlgorithm
+}
+
+func (e InsecureAlgorithmError) Error() string {
+	return fmt.Sprintf("x509: cannot verify signature: insecure algorithm %v", e.GetSignatureAlgorithmName())
 }
 
 // ConstraintViolationError results when a requested usage is not permitted by
@@ -438,6 +441,9 @@ func (c *Certificate) CheckSignatureFrom(parent *Certificate) error {
 // [MD5WithRSA] signatures are rejected, while [SHA1WithRSA] and [ECDSAWithSHA1]
 // signatures are currently accepted.
 func (c *Certificate) CheckSignature(algo crypto.SignatureAlgorithm, signed, signature []byte) error {
+	if c.PublicKeyAlgorithm == nil {
+		return ErrUnsupportedAlgorithm
+	}
 	return checkSignature(algo, signed, signature, c.PublicKey, true)
 }
 
@@ -463,11 +469,11 @@ func (c *Certificate) getSANExtension() []byte {
 func checkSignature(algo crypto.SignatureAlgorithm, message, signature []byte, publicKey crypto.PublicKey, allowSHA1 bool) (err error) {
 	switch algo.GetHash() {
 	case crypto.MD5:
-		return InsecureSignatureAlgorithmError(algo)
+		return InsecureAlgorithmError{algo}
 	case crypto.SHA1:
 		// SHA-1 signatures are only allowed for CRLs and CSRs.
 		if !allowSHA1 {
-			return InsecureSignatureAlgorithmError(algo)
+			return InsecureAlgorithmError{algo}
 		}
 	}
 
@@ -1073,10 +1079,6 @@ var emptyASN1Subject = []byte{0x30, 0}
 //
 // The returned slice is the certificate in DER encoding.
 //
-// The currently supported key types are *rsa.PublicKey, *ecdsa.PublicKey and
-// ed25519.PublicKey. pub must be a supported key type, and priv must be a
-// crypto.Signer with a supported public key.
-//
 // The AuthorityKeyId will be taken from the SubjectKeyId of parent, if any,
 // unless the resulting certificate is self-signed. Otherwise the value from
 // template will be used.
@@ -1130,14 +1132,50 @@ func CreateCertificate(rand io.Reader, template, parent *Certificate, pub crypto
 		return nil, errors.New("x509: only CAs are allowed to specify MaxPathLen")
 	}
 
-	marshaler, ok := template.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
-	if !ok {
-		return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
+	if template.SignatureAlgorithm == nil {
+		return nil, errors.New("x509: signature algorithm must be specified on the template")
 	}
 
-	publicKeyBytes, publicKeyAlgorithmIdentifier, err := marshaler.MarshalPKIXPublicKey(pub)
-	if err != nil {
-		return nil, err
+	if template.SignatureAlgorithm.GetHash() == crypto.MD5 {
+		return nil, errors.New("x509: certificates cannot be signed with MD5")
+	}
+
+	var publicKeyBytes []byte
+	var publicKeyAlgorithmIdentifier *pkix.AlgorithmIdentifier
+	var err error
+
+	if template.PublicKeyAlgorithm == nil {
+		for _, pka := range crypto.PublicKeyAlgorithms {
+			marshaler, ok := pka.(pkixparser.PKIXPublicKeyInfoParser)
+			if !ok {
+				continue
+			}
+
+			publicKeyBytes, publicKeyAlgorithmIdentifier, err = marshaler.MarshalPKIXPublicKey(pub)
+			if errors.Is(err, crypto.ErrMismatchedKey) {
+				continue
+			}
+			if err != nil {
+				return nil, fmt.Errorf("x509: public key info parser was found and matched to the key type, but marshaling failed: %w", err)
+			}
+
+			template.PublicKeyAlgorithm = pka
+			break
+		}
+	} else {
+		marshaler, ok := template.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
+		if !ok {
+			return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
+		}
+
+		publicKeyBytes, publicKeyAlgorithmIdentifier, err = marshaler.MarshalPKIXPublicKey(pub)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if template.PublicKeyAlgorithm == nil {
+		return nil, errors.New("x509: failed to find suitable public key algorithm")
 	}
 
 	asn1Issuer, err := subjectBytes(parent)
@@ -1251,71 +1289,64 @@ func ParseDERCRL(derBytes []byte) (*pkix.CertificateList, error) {
 	return certList, nil
 }
 
-// // CreateCRL returns a DER encoded CRL, signed by this Certificate, that
-// // contains the given list of revoked certificates.
-// //
-// // Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL.
-// // To generate a standards compliant CRL, use [CreateRevocationList] instead.
-// func (c *Certificate) CreateCRL(rand io.Reader, priv crypto.PrivateKey, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error) {
-// 	// key, ok := priv.(crypto.Signer)
-// 	// if !ok {
-// 	// 	return nil, errors.New("x509: certificate private key does not implement crypto.Signer")
-// 	// }
+// CreateCRL returns a DER encoded CRL, signed by this Certificate, that
+// contains the given list of revoked certificates.
+//
+// Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL.
+// To generate a standards compliant CRL, use [CreateRevocationList] instead.
+func (c *Certificate) CreateCRL(rand io.Reader, priv crypto.PrivateKey, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error) {
+	if c.SignatureAlgorithm.GetHash() == crypto.MD5 {
+		return nil, errors.New("x509: CRLs cannot be signed with MD5")
+	}
 
-// 	marshaler, ok := c.PublicKeyAlgorithm.(crypto.PKIXPublicKeyInfoParser)
-// 	if !ok {
-// 		return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
-// 	}
+	// Force revocation times to UTC per RFC 5280.
+	revokedCertsUTC := make([]pkix.RevokedCertificate, len(revokedCerts))
+	for i, rc := range revokedCerts {
+		rc.RevocationTime = rc.RevocationTime.UTC()
+		revokedCertsUTC[i] = rc
+	}
 
-// 	signatureAlgorithm, algorithmIdentifier, err := signingParamsForKey(key, 0)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	tbsCertList := pkix.TBSCertificateList{
+		Version:             1,
+		Signature:           *c.SignatureAlgorithm.GetSignatureAlgorithmIdentifier(),
+		Issuer:              c.Subject.ToRDNSequence(),
+		ThisUpdate:          now.UTC(),
+		NextUpdate:          expiry.UTC(),
+		RevokedCertificates: revokedCertsUTC,
+	}
 
-// 	// Force revocation times to UTC per RFC 5280.
-// 	revokedCertsUTC := make([]pkix.RevokedCertificate, len(revokedCerts))
-// 	for i, rc := range revokedCerts {
-// 		rc.RevocationTime = rc.RevocationTime.UTC()
-// 		revokedCertsUTC[i] = rc
-// 	}
+	// Authority Key Id
+	if len(c.SubjectKeyId) > 0 {
+		var aki pkix.Extension
+		aki.Id = oidExtensionAuthorityKeyId
+		aki.Value, err = asn1.Marshal(authKeyId{Id: c.SubjectKeyId})
+		if err != nil {
+			return nil, err
+		}
+		tbsCertList.Extensions = append(tbsCertList.Extensions, aki)
+	}
 
-// 	tbsCertList := pkix.TBSCertificateList{
-// 		Version:             1,
-// 		Signature:           algorithmIdentifier,
-// 		Issuer:              c.Subject.ToRDNSequence(),
-// 		ThisUpdate:          now.UTC(),
-// 		NextUpdate:          expiry.UTC(),
-// 		RevokedCertificates: revokedCertsUTC,
-// 	}
+	tbsCertListContents, err := asn1.Marshal(tbsCertList)
+	if err != nil {
+		return nil, err
+	}
+	tbsCertList.Raw = tbsCertListContents
 
-// 	// Authority Key Id
-// 	if len(c.SubjectKeyId) > 0 {
-// 		var aki pkix.Extension
-// 		aki.Id = oidExtensionAuthorityKeyId
-// 		aki.Value, err = asn1.Marshal(authKeyId{Id: c.SubjectKeyId})
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		tbsCertList.Extensions = append(tbsCertList.Extensions, aki)
-// 	}
+	signature, err := c.SignatureAlgorithm.Sign(rand, tbsCertListContents, priv)
+	if err != nil {
+		return nil, err
+	}
 
-// 	tbsCertListContents, err := asn1.Marshal(tbsCertList)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	tbsCertList.Raw = tbsCertListContents
+	if err := checkSignature(c.SignatureAlgorithm, tbsCertListContents, signature, priv.Public(), true); err != nil {
+		return nil, fmt.Errorf("x509: signature returned by signer is invalid: %w", err)
+	}
 
-// 	signature, err := signTBS(tbsCertListContents, key, signatureAlgorithm, rand)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return asn1.Marshal(pkix.CertificateList{
-// 		TBSCertList:        tbsCertList,
-// 		SignatureAlgorithm: algorithmIdentifier,
-// 		SignatureValue:     asn1.BitString{Bytes: signature, BitLength: len(signature) * 8},
-// 	})
-// }
+	return asn1.Marshal(pkix.CertificateList{
+		TBSCertList:        tbsCertList,
+		SignatureAlgorithm: *c.SignatureAlgorithm.GetSignatureAlgorithmIdentifier(),
+		SignatureValue:     asn1.BitString{Bytes: signature, BitLength: len(signature) * 8},
+	})
+}
 
 // CertificateRequest represents a PKCS #10, certificate signature request.
 type CertificateRequest struct {
@@ -1472,6 +1503,9 @@ func parseCSRExtensions(rawAttributes []asn1.RawValue) ([]pkix.Extension, error)
 //
 // The returned slice is the certificate request in DER encoding.
 func CreateCertificateRequest(rand io.Reader, template *CertificateRequest, priv crypto.PrivateKey) (csr []byte, err error) {
+	if template.SignatureAlgorithm.GetHash() == crypto.MD5 {
+		return nil, errors.New("x509: certificate requests cannot be signed with MD5")
+	}
 	marshaler, ok := template.SignatureAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
 	if !ok {
 		return nil, errors.New("x509: template's public key algorithm does not implement public key marshaler")
@@ -1856,6 +1890,9 @@ func CreateRevocationList(rand io.Reader, template *RevocationList, issuer *Cert
 	}
 	if template.Number == nil {
 		return nil, errors.New("x509: template contains nil Number field")
+	}
+	if issuer.SignatureAlgorithm.GetHash() == crypto.MD5 {
+		return nil, errors.New("x509: revocation lists cannot be signed with MD5")
 	}
 
 	var revokedCerts []pkix.RevokedCertificate

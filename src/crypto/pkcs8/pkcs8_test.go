@@ -2,10 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package pkcs8
+package pkcs8_test
 
 import (
 	"bytes"
+	"crypto/ecdh"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	. "crypto/pkcs8"
+	"crypto/rsa"
 	"encoding/hex"
 	"reflect"
 	"strings"
@@ -104,7 +110,7 @@ func TestPKCS8(t *testing.T) {
 			t.Errorf("%s: failed to decode hex: %s", test.name, err)
 			continue
 		}
-		privKey, err := ParsePKCS8PrivateKey(derBytes)
+		privKey, err := UnmarshalPKCS8PrivateKey(derBytes)
 		if err != nil {
 			t.Errorf("%s: failed to decode PKCS#8: %s", test.name, err)
 			continue
@@ -162,7 +168,7 @@ var pkcs8MismatchKeyTests = []struct {
 func TestPKCS8MismatchKeyFormat(t *testing.T) {
 	for i, test := range pkcs8MismatchKeyTests {
 		derBytes, _ := hex.DecodeString(test.hexKey)
-		_, err := ParsePKCS8PrivateKey(derBytes)
+		_, err := UnmarshalPKCS8PrivateKey(derBytes)
 		if !strings.Contains(err.Error(), test.errorContains) {
 			t.Errorf("#%d: expected error containing %q, got %s", i, test.errorContains, err)
 		}

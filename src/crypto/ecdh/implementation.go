@@ -2,7 +2,6 @@ package ecdh
 
 import (
 	"crypto"
-	"crypto/ecdsa"
 	"crypto/pkcs8"
 	"crypto/pkix"
 	"encoding/asn1"
@@ -57,7 +56,7 @@ func (pka *ECDHPublicKeyAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]
 		if !ok {
 			return nil, nil, fmt.Errorf("ecdh: %w", crypto.ErrAlgorithmNotSupported)
 		}
-		publicKeyAlgorithm.Algorithm = ecdsa.OidPublicKeyECDSA
+		publicKeyAlgorithm.Algorithm = oidPublicKeyECDSA
 		var paramBytes []byte
 		paramBytes, err := asn1.Marshal(oid)
 		if err != nil {
@@ -110,7 +109,7 @@ func (pka *ECDHPublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) 
 			return nil, errors.New("ecdh: failed to marshal curve OID: " + err.Error())
 		}
 		privKey.AlgorithmIdentifier = pkix.AlgorithmIdentifier{
-			Algorithm: ecdsa.OidPublicKeyECDSA,
+			Algorithm: oidPublicKeyECDSA,
 			Parameters: asn1.RawValue{
 				FullBytes: oidBytes,
 			},

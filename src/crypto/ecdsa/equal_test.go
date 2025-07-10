@@ -8,8 +8,8 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/pkcs8"
 	"crypto/rand"
-	"crypto/x509"
 	"testing"
 )
 
@@ -27,11 +27,11 @@ func testEqual(t *testing.T, c elliptic.Curve) {
 		t.Errorf("private key is not equal to itself: %v", private)
 	}
 
-	enc, err := x509.MarshalPKCS8PrivateKey(private)
+	enc, err := pkcs8.MarshalPKCS8PrivateKey(private)
 	if err != nil {
 		t.Fatal(err)
 	}
-	decoded, err := x509.ParsePKCS8PrivateKey(enc)
+	decoded, err := pkcs8.UnmarshalPKCS8PrivateKey(enc)
 	if err != nil {
 		t.Fatal(err)
 	}
