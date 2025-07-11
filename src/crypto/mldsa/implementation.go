@@ -2,8 +2,8 @@ package mldsa
 
 import (
 	"crypto/pkcs8"
-	"crypto/utils"
 	"crypto/pkix"
+	"crypto/utils"
 	"encoding/asn1"
 	"fmt"
 	"io"
@@ -27,74 +27,58 @@ var (
 
 var mldsaSignatureAlgorithms = []*MLDSASignatureAlgorithm{
 	{
-		MLDSAPublicKeyAlgorithm: MLDSAPKA,
-		oid:                     OidPublicKeyMLDSA44,
-		name:                    mldsa44.Scheme().Name(),
-		scheme:                  mldsa44.Scheme(),
+		oid:    OidPublicKeyMLDSA44,
+		name:   mldsa44.Scheme().Name(),
+		scheme: mldsa44.Scheme(),
 	},
 	{
-		MLDSAPublicKeyAlgorithm: MLDSAPKA,
-		oid:                     OidPublicKeyMLDSA65,
-		name:                    mldsa65.Scheme().Name(),
-		scheme:                  mldsa65.Scheme(),
+		oid:    OidPublicKeyMLDSA65,
+		name:   mldsa65.Scheme().Name(),
+		scheme: mldsa65.Scheme(),
 	},
 	{
-		MLDSAPublicKeyAlgorithm: MLDSAPKA,
-		oid:                     OidPublicKeyMLDSA87,
-		name:                    mldsa87.Scheme().Name(),
-		scheme:                  mldsa87.Scheme(),
+		oid:    OidPublicKeyMLDSA87,
+		name:   mldsa87.Scheme().Name(),
+		scheme: mldsa87.Scheme(),
 	},
 }
 
 var mldsaSignatureAlgorithmsByName = make(map[string]*MLDSASignatureAlgorithm)
-
 var mldsaSignatureAlgorithmsByOID = make(map[string]*MLDSASignatureAlgorithm)
 
 func init() {
-	crypto.RegisterPublicKeyAlgorithm(MLDSAPKA.GetPublicKeyAlgorithmOID(), MLDSAPKA)
-
 	for _, sa := range mldsaSignatureAlgorithms {
 		mldsaSignatureAlgorithmsByName[sa.name] = sa
 		mldsaSignatureAlgorithmsByOID[sa.oid.String()] = sa
 
-		crypto.RegisterPublicKeyAlgorithm(sa.oid, MLDSAPKA)
+		crypto.RegisterPublicKeyAlgorithm(sa.oid, sa)
 		crypto.RegisterSignatureAlgorithm(sa.oid, sa)
 	}
 }
 
-var MLDSAPKA = &MLDSAPublicKeyAlgorithm{}
-
-type MLDSAPublicKeyAlgorithm struct {
-}
-
-// PublicKeyAlgorithm interface implementation
-
-func (pka *MLDSAPublicKeyAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
-	return OidPublicKeyMLDSAPrefix
-}
-
-func (pka *MLDSAPublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
-	return "ML-DSA"
-}
-
-func (pka *MLDSAPublicKeyAlgorithm) CanSign() bool {
-	return true
-}
-
-// func (pka *MLDSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
-// 	return MLDSA65, nil
-// }
-
 type MLDSASignatureAlgorithm struct {
-	*MLDSAPublicKeyAlgorithm
 	name   string
 	oid    asn1.ObjectIdentifier
 	scheme sign.Scheme
 }
 
+// PublicKeyAlgorithm interface implementation
+
+func (pka *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
+	return pka.oid
+}
+
+func (pka *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmName() string {
+	return pka.scheme.Name()
+}
+
+func (pka *MLDSASignatureAlgorithm) CanSign() bool {
+	return true
+}
+
 // PKIXPublicKeyInfoParser interface implementation
 
-func (pka *MLDSAPublicKeyAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
+func (pka *MLDSASignatureAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
 	signKey, ok := pk.(sign.PublicKey)
 	if !ok || !strings.HasPrefix(signKey.Scheme().Name(), pka.GetPublicKeyAlgorithmName()) {
 		return nil, nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
@@ -111,7 +95,7 @@ func (pka *MLDSAPublicKeyAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([
 	return publicKeyBytes, publicKeyAlgorithm, nil
 }
 
-func (pka *MLDSAPublicKeyAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
+func (pka *MLDSASignatureAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
 	if !utils.IsSubOID(pka.GetPublicKeyAlgorithmOID(), pki.AlgorithmIdentifier.Algorithm) {
 		return nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
@@ -134,12 +118,12 @@ func (pka *MLDSAPublicKeyAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicK
 
 // PKCS8PrivateKeyMarshaler interface implementation
 
-func (pka *MLDSAPublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
+func (pka *MLDSASignatureAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
 	var keyBytes []byte
 	var err error
 
 	signKey, ok := sk.(sign.PrivateKey)
-	if !ok || !strings.HasPrefix(signKey.Scheme().Name(), pka.GetPublicKeyAlgorithmName()) {
+	if !ok || signKey.Scheme().Name() != pka.GetPublicKeyAlgorithmName() {
 		return nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
 
@@ -163,7 +147,7 @@ func (pka *MLDSAPublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey)
 	return ret, nil
 }
 
-func (pka *MLDSAPublicKeyAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
+func (pka *MLDSASignatureAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
 	var pkcs8 pkcs8.PKCS8PrivateKey
 	if _, err := asn1.Unmarshal(skBytes, &pkcs8); err != nil {
 		return nil, fmt.Errorf("mldsa: failed to unmarshal private key: %w", err)
