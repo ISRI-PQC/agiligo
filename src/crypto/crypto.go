@@ -277,6 +277,8 @@ type PublicKeyAlgorithm interface {
 	GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier
 	GetPublicKeyAlgorithmName() string
 	CanSign() bool
+	IsCorrectKeyType(pk PublicKey) bool
+	GetDefaultSignatureAlgorithm(pk PrivateKey) (SignatureAlgorithm, error)
 }
 
 type KeyGenParameters interface{}

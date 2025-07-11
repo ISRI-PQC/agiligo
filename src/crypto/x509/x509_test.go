@@ -628,7 +628,7 @@ func TestMismatchedSignatureAlgorithm(t *testing.T) {
 		t.Fatal("CheckSignature unexpectedly return no error")
 	}
 
-	const expectedSubstring = " but have public key of type "
+	const expectedSubstring = "mismatched key type"
 	if !strings.Contains(err.Error(), expectedSubstring) {
 		t.Errorf("Expected error containing %q, but got %q", expectedSubstring, err)
 	}
@@ -1102,7 +1102,7 @@ func TestParseCertificateWithDSASignatureAlgorithm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse certificate: %s", err)
 	}
-	if !cert.SignatureAlgorithm.GetPublicKeyAlgorithmOID().Equal(dsa.OidSignatureDSAWithSHA1) {
+	if !cert.SignatureAlgorithm.GetSignatureAlgorithmOID().Equal(dsa.OidSignatureDSAWithSHA1) {
 		t.Errorf("Parsed signature algorithm was not DSAWithSHA1")
 	}
 }
@@ -2699,7 +2699,7 @@ func TestCreateRevocationList(t *testing.T) {
 				ThisUpdate: time.Time{}.Add(time.Hour * 24),
 				NextUpdate: time.Time{}.Add(time.Hour * 48),
 			},
-			expectedError: "x509: requested crypto.SignatureAlgorithm does not match private key type",
+			expectedError: "x509: private key type and template signature algorithm do not match",
 		},
 		{
 			name: "valid",
@@ -3875,7 +3875,7 @@ func TestRevocationListCheckSignatureFrom(t *testing.T) {
 				PublicKeyAlgorithm:    ecdsa.ECDSAPKA,
 				PublicKey:             badKey.Public(),
 			},
-			err: "x509: ECDSA verification failure",
+			err: "ecdsa: ECDSA verification failure",
 		},
 	}
 

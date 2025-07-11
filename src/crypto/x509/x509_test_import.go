@@ -10,9 +10,10 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/x509"
 	"crypto/pkix"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/pem"
 	"math/big"
 	"strings"
@@ -21,7 +22,7 @@ import (
 
 func main() {
 	block, _ := pem.Decode([]byte(pemPrivateKey))
-	rsaPriv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	rsaPriv, err := rsa.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		panic("Failed to parse private key: " + err.Error())
 	}

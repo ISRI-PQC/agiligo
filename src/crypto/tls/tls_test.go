@@ -1706,7 +1706,13 @@ func http2isBadCipher(cipher uint16) bool {
 	}
 }
 
-type brokenSigner struct{ crypto.Signer }
+type brokenSigner struct {
+	crypto.Signer
+}
+
+func (s brokenSigner) Equal(x crypto.PrivateKey) bool {
+	return s.Signer.(crypto.PrivateKey).Equal(x)
+}
 
 func (s brokenSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	// Replace opts with opts.HashFunc(), so rsa.PSSOptions are discarded.
@@ -1719,7 +1725,7 @@ func TestPKCS1OnlyCert(t *testing.T) {
 	clientConfig := testConfig.Clone()
 	clientConfig.Certificates = []Certificate{{
 		Certificate: [][]byte{testRSACertificate},
-		PrivateKey:  testRSAPrivateKey,
+		PrivateKey:  brokenSigner{testRSAPrivateKey},
 	}}
 	serverConfig := testConfig.Clone()
 	serverConfig.MaxVersion = VersionTLS12 // TLS 1.3 doesn't support PKCS #1 v1.5

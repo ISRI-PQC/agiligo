@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package ecdsa
 
 import (
@@ -71,27 +74,32 @@ func (pka *ECDSAPublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
 	return "ECDSA"
 }
 
+func (pka *ECDSAPublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	_, ok := pk.(*PublicKey)
+	return ok
+}
+
 func (pka *ECDSAPublicKeyAlgorithm) CanSign() bool {
 	return true
 }
 
-// func (pka *ECDSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
-// 	ecdsaKey, ok := pk.(*PublicKey)
-// 	if !ok {
-// 		return nil, fmt.Errorf("ecdsa: %w", crypto.ErrMismatchedKey)
-// 	}
+func (pka *ECDSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
+	ecdsaKey, ok := pk.(*PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("ecdsa: %w", crypto.ErrMismatchedKey)
+	}
 
-// 	switch ecdsaKey.Curve {
-// 	case elliptic.P224(), elliptic.P256():
-// 		return ECDSAWithSHA256, nil
-// 	case elliptic.P384():
-// 		return ECDSAWithSHA384, nil
-// 	case elliptic.P521():
-// 		return ECDSAWithSHA512, nil
-// 	default:
-// 		return nil, errors.New("ecdsa: unsupported elliptic curve")
-// 	}
-// }
+	switch ecdsaKey.Curve {
+	case elliptic.P224(), elliptic.P256():
+		return ECDSAWithSHA256, nil
+	case elliptic.P384():
+		return ECDSAWithSHA384, nil
+	case elliptic.P521():
+		return ECDSAWithSHA512, nil
+	default:
+		return nil, errors.New("ecdsa: unsupported elliptic curve")
+	}
+}
 
 // PKIXPublicKeyInfoParser interface implementation
 

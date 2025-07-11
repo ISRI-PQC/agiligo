@@ -30,15 +30,20 @@ type PKCS8PrivateKeyMarshaler interface {
 
 func MarshalPKCS8PrivateKey(key crypto.PrivateKey) ([]byte, error) {
 	for _, pka := range crypto.PublicKeyAlgorithms {
+		if !pka.IsCorrectKeyType(key.Public()) {
+			continue
+		}
+
 		marshaler, ok := pka.(PKCS8PrivateKeyMarshaler)
 		if !ok {
 			continue
 		}
 
 		skb, err := marshaler.MarshalPKCS8PrivateKey(key)
-		if errors.Is(err, crypto.ErrMismatchedKey) {
+		if errors.Is(err, crypto.ErrMismatchedKey) || errors.Is(err, crypto.ErrAlgorithmNotImplemented) {
 			continue
 		}
+
 		if err != nil {
 			return nil, fmt.Errorf("pkcs8: pkcs8 marshaler was found and matched to the key type, but marshaling failed: %w", err)
 		}

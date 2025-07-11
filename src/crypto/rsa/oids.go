@@ -1,3 +1,6 @@
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package rsa
 
 import "encoding/asn1"
@@ -23,10 +26,8 @@ import "encoding/asn1"
 //
 //	sha512WithRSAEncryption OBJECT IDENTIFIER ::= { pkcs-1 13 }
 var (
-	OidSignatureMD2WithRSA    = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 2}
 	OidSignatureMD5WithRSA    = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 4}
 	OidSignatureSHA1WithRSA   = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 5}
-	OidSignatureSHA224WithRSA = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 14}
 	OidSignatureSHA256WithRSA = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 11}
 	OidSignatureSHA384WithRSA = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 12}
 	OidSignatureSHA512WithRSA = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 13}

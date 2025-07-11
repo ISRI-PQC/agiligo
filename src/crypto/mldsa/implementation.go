@@ -1,13 +1,14 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package mldsa
 
 import (
 	"crypto/pkcs8"
 	"crypto/pkix"
-	"crypto/utils"
 	"encoding/asn1"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/cloudflare/circl/sign"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
@@ -64,23 +65,32 @@ type MLDSASignatureAlgorithm struct {
 
 // PublicKeyAlgorithm interface implementation
 
-func (pka *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
-	return pka.oid
+func (sa *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
+	return sa.oid
 }
 
-func (pka *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmName() string {
-	return pka.scheme.Name()
+func (sa *MLDSASignatureAlgorithm) GetPublicKeyAlgorithmName() string {
+	return sa.scheme.Name()
 }
 
-func (pka *MLDSASignatureAlgorithm) CanSign() bool {
+func (sa *MLDSASignatureAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	signKey, ok := pk.(sign.PublicKey)
+	return ok && signKey.Scheme().Name() == sa.GetPublicKeyAlgorithmName()
+}
+
+func (sa *MLDSASignatureAlgorithm) CanSign() bool {
 	return true
+}
+
+func (sa *MLDSASignatureAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
+	return mldsaSignatureAlgorithmsByName[sa.scheme.Name()], nil
 }
 
 // PKIXPublicKeyInfoParser interface implementation
 
-func (pka *MLDSASignatureAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
+func (sa *MLDSASignatureAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
 	signKey, ok := pk.(sign.PublicKey)
-	if !ok || !strings.HasPrefix(signKey.Scheme().Name(), pka.GetPublicKeyAlgorithmName()) {
+	if !ok || signKey.Scheme().Name() != sa.GetPublicKeyAlgorithmName() {
 		return nil, nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
 
@@ -95,8 +105,8 @@ func (pka *MLDSASignatureAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([
 	return publicKeyBytes, publicKeyAlgorithm, nil
 }
 
-func (pka *MLDSASignatureAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
-	if !utils.IsSubOID(pka.GetPublicKeyAlgorithmOID(), pki.AlgorithmIdentifier.Algorithm) {
+func (sa *MLDSASignatureAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
+	if !pki.AlgorithmIdentifier.Algorithm.Equal(sa.GetPublicKeyAlgorithmOID()) {
 		return nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
 
@@ -118,12 +128,12 @@ func (pka *MLDSASignatureAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicK
 
 // PKCS8PrivateKeyMarshaler interface implementation
 
-func (pka *MLDSASignatureAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
+func (sa *MLDSASignatureAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
 	var keyBytes []byte
 	var err error
 
 	signKey, ok := sk.(sign.PrivateKey)
-	if !ok || signKey.Scheme().Name() != pka.GetPublicKeyAlgorithmName() {
+	if !ok || signKey.Scheme().Name() != sa.GetPublicKeyAlgorithmName() {
 		return nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
 
@@ -147,13 +157,13 @@ func (pka *MLDSASignatureAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey)
 	return ret, nil
 }
 
-func (pka *MLDSASignatureAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
+func (sa *MLDSASignatureAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
 	var pkcs8 pkcs8.PKCS8PrivateKey
 	if _, err := asn1.Unmarshal(skBytes, &pkcs8); err != nil {
 		return nil, fmt.Errorf("mldsa: failed to unmarshal private key: %w", err)
 	}
 
-	if !utils.IsSubOID(pka.GetPublicKeyAlgorithmOID(), pkcs8.AlgorithmIdentifier.Algorithm) {
+	if !pkcs8.AlgorithmIdentifier.Algorithm.Equal(sa.GetPublicKeyAlgorithmOID()) {
 		return nil, fmt.Errorf("mldsa: %w", crypto.ErrMismatchedKey)
 	}
 

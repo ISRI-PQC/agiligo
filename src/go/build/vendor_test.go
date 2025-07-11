@@ -22,6 +22,7 @@ var allowedPackagePrefixes = []string{
 	"github.com/google/pprof",
 	"github.com/ianlancetaylor/demangle",
 	"rsc.io/markdown",
+	"github.com/cloudflare/circl",
 }
 
 // Verify that the vendor directories contain only packages matching the list above.

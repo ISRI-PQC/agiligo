@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package dsa
 
 import (
@@ -45,25 +48,34 @@ type DSAPublicKeyAlgorithm struct {
 
 // PublicKeyAlgorithm interface implementation
 
-func (pka *DSAPublicKeyAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
+func (dsa *DSAPublicKeyAlgorithm) GetPublicKeyAlgorithmOID() asn1.ObjectIdentifier {
 	return OidPublicKeyDSA
 }
 
-func (pka *DSAPublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
+func (dsa *DSAPublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
 	return "DSA"
 }
 
-func (pka *DSAPublicKeyAlgorithm) CanSign() bool {
+func (dsa *DSAPublicKeyAlgorithm) CanSign() bool {
 	return true
+}
+
+func (dsa *DSAPublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	_, ok := pk.(*PublicKey)
+	return ok
+}
+
+func (dsa *DSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error){
+	return DSAWithSHA256, nil
 }
 
 // PKIXPublicKeyInfoParser interface implementation
 
-func (pka *DSAPublicKeyAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
+func (dsa *DSAPublicKeyAlgorithm) MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error) {
 	return nil, nil, crypto.ErrAlgorithmNotImplemented
 }
 
-func (pka *DSAPublicKeyAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
+func (dsa *DSAPublicKeyAlgorithm) ParsePKIXPublicKeyInfo(pki *pkix.PkixPublicKeyInfo) (crypto.PublicKey, error) {
 	if !pki.AlgorithmIdentifier.Algorithm.Equal(OidPublicKeyDSA) {
 		return nil, fmt.Errorf("dsa: %w", crypto.ErrMismatchedKey)
 	}
@@ -101,11 +113,11 @@ func (sa *DSASignatureAlgorithm) ValidatePKIXAlgorithmIdentifier(ai *pkix.Algori
 
 // PKCS8PrivateKeyMarshaler interface implementation
 
-func (pka *DSAPublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
+func (dsa *DSAPublicKeyAlgorithm) MarshalPKCS8PrivateKey(sk crypto.PrivateKey) ([]byte, error) {
 	return nil, crypto.ErrAlgorithmNotImplemented
 }
 
-func (pka *DSAPublicKeyAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
+func (dsa *DSAPublicKeyAlgorithm) UnmarshalPKCS8PrivateKey(skBytes []byte) (crypto.PrivateKey, error) {
 	return nil, crypto.ErrAlgorithmNotImplemented
 }
 

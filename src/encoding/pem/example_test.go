@@ -6,7 +6,7 @@ package pem_test
 
 import (
 	"crypto/pkix"
-	"crypto/pkix/pkixparser"
+	"crypto/rsa"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -41,7 +41,8 @@ and some more`)
 		log.Fatal(err)
 	}
 
-	pub, err := pkixparser.GetPublicKeyFromPKIXPublicKeyInfo(pki)
+	// pub, err := pkixparser.GetPublicKeyFromPKIXPublicKeyInfo(pki)
+	pub, err := rsa.RSAPKA.ParsePKIXPublicKeyInfo(pki)
 	if err != nil {
 		log.Fatal(err)
 	}

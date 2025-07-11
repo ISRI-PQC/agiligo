@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package ed25519
 
 import (
@@ -21,7 +24,7 @@ func init() {
 
 	Ed25519 = &Ed25519SignatureAlgorithm{
 		Ed25519PublicKeyAlgorithm: Ed25519PKA,
-		hash:                      crypto.SHA1,
+		hash:                      crypto.NoHash,
 		oid:                       OidSignatureEd25519,
 		name:                      "PureEd25519",
 	}
@@ -43,14 +46,18 @@ func (pka *Ed25519PublicKeyAlgorithm) GetPublicKeyAlgorithmName() string {
 	return "Ed25519"
 }
 
+func (pka *Ed25519PublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	_, ok := pk.(PublicKey)
+	return ok
+}
 
 func (pka *Ed25519PublicKeyAlgorithm) CanSign() bool {
 	return true
 }
 
-// func (pka *Ed25519PublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
-// 	return Ed25519, nil
-// }
+func (pka *Ed25519PublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
+	return Ed25519, nil
+}
 
 // PKIXPublicKeyInfoHandler interface implementation
 

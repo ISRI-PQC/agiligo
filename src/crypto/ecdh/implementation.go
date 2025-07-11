@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package ecdh
 
 import (
@@ -34,9 +37,14 @@ func (pka *ECDHPublicKeyAlgorithm) CanSign() bool {
 	return false
 }
 
-// func (pka *ECDHPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
-// 	return nil, fmt.Errorf("ecdh: %w", crypto.ErrAlgorithmNotSupported)
-// }
+func (pka *ECDHPublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	_, ok := pk.(*PublicKey)
+	return ok
+}
+
+func (pka *ECDHPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
+	return nil, fmt.Errorf("ecdh: %w", crypto.ErrAlgorithmNotSupported)
+}
 
 // PKIXPublicKeyInfoParser interface implementation
 

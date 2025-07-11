@@ -1,9 +1,11 @@
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package ecdsa
 
 import (
 	"crypto/elliptic"
 	"crypto/pkcs8"
-	"crypto/rsa"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -12,7 +14,7 @@ import (
 
 const ecPrivKeyVersion = 1
 
-// ecPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
+// EcPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
 // References:
 //
 //	RFC 5915
@@ -20,7 +22,7 @@ const ecPrivKeyVersion = 1
 //
 // Per RFC 5915 the NamedCurveOID is marked as ASN.1 OPTIONAL, however in
 // most cases it is not.
-type ecPrivateKey struct {
+type EcPrivateKey struct {
 	Version       int
 	PrivateKey    []byte
 	NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
@@ -55,7 +57,7 @@ func marshalECPrivateKeyWithOID(key *PrivateKey, oid asn1.ObjectIdentifier) ([]b
 		return nil, errors.New("invalid elliptic key public key")
 	}
 	privateKey := make([]byte, (key.Curve.Params().N.BitLen()+7)/8)
-	return asn1.Marshal(ecPrivateKey{
+	return asn1.Marshal(EcPrivateKey{
 		Version:       1,
 		PrivateKey:    key.D.FillBytes(privateKey),
 		NamedCurveOID: oid,
@@ -68,12 +70,12 @@ func marshalECPrivateKeyWithOID(key *PrivateKey, oid asn1.ObjectIdentifier) ([]b
 // the PKCS8 container) - if it is provided then use this instead of the OID
 // that may exist in the EC private key structure.
 func parseECPrivateKey(namedCurveOID *asn1.ObjectIdentifier, der []byte) (key *PrivateKey, err error) {
-	var privKey ecPrivateKey
+	var privKey EcPrivateKey
 	if _, err := asn1.Unmarshal(der, &privKey); err != nil {
 		if _, err := asn1.Unmarshal(der, &pkcs8.PKCS8PrivateKey{}); err == nil {
 			return nil, errors.New("x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)")
 		}
-		if _, err := asn1.Unmarshal(der, &rsa.Pkcs1PrivateKey{}); err == nil {
+		if _, err := asn1.Unmarshal(der, &pkcs1PrivateKey{}); err == nil {
 			return nil, errors.New("x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)")
 		}
 
@@ -120,4 +122,27 @@ func parseECPrivateKey(namedCurveOID *asn1.ObjectIdentifier, der []byte) (key *P
 	priv.X, priv.Y = curve.ScalarBaseMult(privateKey)
 
 	return priv, nil
+}
+
+// pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.
+type pkcs1PrivateKey struct {
+	Version int
+	N       *big.Int
+	E       int
+	D       *big.Int
+	P       *big.Int
+	Q       *big.Int
+	Dp      *big.Int `asn1:"optional"`
+	Dq      *big.Int `asn1:"optional"`
+	Qinv    *big.Int `asn1:"optional"`
+
+	AdditionalPrimes []pkcs1AdditionalRSAPrime `asn1:"optional,omitempty"`
+}
+
+type pkcs1AdditionalRSAPrime struct {
+	Prime *big.Int
+
+	// We ignore these values because rsa will calculate them.
+	Exp   *big.Int
+	Coeff *big.Int
 }

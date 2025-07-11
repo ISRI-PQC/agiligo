@@ -827,7 +827,7 @@ func processExtensions(out *Certificate) error {
 var x509negativeserial = godebug.New("x509negativeserial")
 
 func parseCertificate(der []byte) (*Certificate, error) {
-	var ok bool
+	// var ok bool
 
 	cert := &Certificate{}
 
@@ -898,13 +898,14 @@ func parseCertificate(der []byte) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	cert.SignatureAlgorithm, ok = crypto.SignatureAlgorithms[sigAI.Algorithm.String()]
-	if !ok {
-		return nil, fmt.Errorf("x509: signature algorithm %s is not implemented", sigAI.Algorithm.String())
-	}
-
-	if err := cert.SignatureAlgorithm.ValidatePKIXAlgorithmIdentifier(&sigAI); err != nil {
-		return nil, fmt.Errorf("x509: signature algorithm in tbsCert is invalid: %w", err)
+	cert.SignatureAlgorithm, _ = crypto.SignatureAlgorithms[sigAI.Algorithm.String()]
+	// if !ok {
+	// 	return nil, fmt.Errorf("x509: signature algorithm %s is not implemented", sigAI.Algorithm.String())
+	// }
+	if cert.SignatureAlgorithm != nil {
+		if err := cert.SignatureAlgorithm.ValidatePKIXAlgorithmIdentifier(&sigAI); err != nil {
+			return nil, fmt.Errorf("x509: signature algorithm in tbsCert is invalid: %w", err)
+		}
 	}
 
 	var issuerSeq cryptobyte.String
@@ -955,27 +956,28 @@ func parseCertificate(der []byte) (*Certificate, error) {
 		return nil, err
 	}
 
-	cert.PublicKeyAlgorithm, ok = crypto.PublicKeyAlgorithms[pkAI.Algorithm.String()]
-	if !ok {
-		return nil, fmt.Errorf("x509: public key algorithm %s is not implemented", pkAI.Algorithm.String())
-	}
+	cert.PublicKeyAlgorithm, _ = crypto.PublicKeyAlgorithms[pkAI.Algorithm.String()]
+	// if !ok {
+	// 	return nil, fmt.Errorf("x509: public key algorithm %s is not implemented", pkAI.Algorithm.String())
+	// }
 
-	var spk asn1.BitString
-	if !spki.ReadASN1BitString(&spk) {
-		return nil, errors.New("x509: malformed subjectPublicKey")
-	}
+	if cert.PublicKeyAlgorithm != nil {
+		var spk asn1.BitString
+		if !spki.ReadASN1BitString(&spk) {
+			return nil, errors.New("x509: malformed subjectPublicKey")
+		}
+		pkiParser, ok := cert.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
+		if !ok {
+			return nil, fmt.Errorf("x509: public key algorithm %s does not implement crypto.PKIXPublicKeyInfoParser", cert.PublicKeyAlgorithm.GetPublicKeyAlgorithmName())
+		}
 
-	pkiParser, ok := cert.PublicKeyAlgorithm.(pkixparser.PKIXPublicKeyInfoParser)
-	if !ok {
-		return nil, fmt.Errorf("x509: public key algorithm %s does not implement crypto.PKIXPublicKeyInfoParser", cert.PublicKeyAlgorithm.GetPublicKeyAlgorithmName())
-	}
-
-	cert.PublicKey, err = pkiParser.ParsePKIXPublicKeyInfo(&pkix.PkixPublicKeyInfo{
-		AlgorithmIdentifier: pkAI,
-		PublicKey:           spk,
-	})
-	if err != nil {
-		return nil, err
+		cert.PublicKey, err = pkiParser.ParsePKIXPublicKeyInfo(&pkix.PkixPublicKeyInfo{
+			AlgorithmIdentifier: pkAI,
+			PublicKey:           spk,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if cert.Version > 1 {

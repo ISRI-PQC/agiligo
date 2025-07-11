@@ -11,10 +11,11 @@ import (
 	"fmt"
 	"internal/godebug"
 	"math/big"
+	"crypto/pkcs8"
 )
 
-// Pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.
-type Pkcs1PrivateKey struct {
+// pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.
+type pkcs1PrivateKey struct {
 	Version int
 	N       *big.Int
 	E       int
@@ -53,12 +54,18 @@ var x509rsacrt = godebug.New("x509rsacrt")
 // Before Go 1.24, the CRT parameters were ignored and recomputed. To restore
 // the old behavior, use the GODEBUG=x509rsacrt=0 environment variable.
 func ParsePKCS1PrivateKey(der []byte) (*PrivateKey, error) {
-	var priv Pkcs1PrivateKey
+	var priv pkcs1PrivateKey
 	rest, err := asn1.Unmarshal(der, &priv)
 	if len(rest) > 0 {
 		return nil, asn1.SyntaxError{Msg: "trailing data"}
 	}
 	if err != nil {
+		if _, err := asn1.Unmarshal(der, &ecPrivateKey{}); err == nil {
+			return nil, errors.New("x509: failed to parse private key (use ParseECPrivateKey instead for this key format)")
+		}
+		if _, err := asn1.Unmarshal(der, &pkcs8.PKCS8PrivateKey{}); err == nil {
+			return nil, errors.New("x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)")
+		}
 		return nil, fmt.Errorf("rsa: couldn't not unmarshal pkcs1 private key: %w", err)
 	}
 
@@ -133,7 +140,7 @@ func MarshalPKCS1PrivateKey(key *PrivateKey) []byte {
 		version = 1
 	}
 
-	priv := Pkcs1PrivateKey{
+	priv := pkcs1PrivateKey{
 		Version: version,
 		N:       key.N,
 		E:       key.PublicKey.E,
@@ -194,4 +201,19 @@ func MarshalPKCS1PublicKey(key *PublicKey) []byte {
 		E: key.E,
 	})
 	return derBytes
+}
+
+// ecPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
+// References:
+//
+//	RFC 5915
+//	SEC1 - http://www.secg.org/sec1-v2.pdf
+//
+// Per RFC 5915 the NamedCurveOID is marked as ASN.1 OPTIONAL, however in
+// most cases it is not.
+type ecPrivateKey struct {
+	Version       int
+	PrivateKey    []byte
+	NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
+	PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 }

@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package rsa
 
 import (
@@ -18,7 +21,6 @@ import (
 )
 
 var (
-	MD2WithRSA       *RSASignatureAlgorithm
 	MD5WithRSA       *RSASignatureAlgorithm
 	SHA1WithRSA      *RSASignatureAlgorithm
 	ISOSHA1WithRSA   *RSASignatureAlgorithm
@@ -40,14 +42,6 @@ func init() {
 	}
 	crypto.RegisterSignatureAlgorithm(MD5WithRSA.oid, MD5WithRSA)
 
-	ISOSHA1WithRSA = &RSASignatureAlgorithm{
-		RSAPublicKeyAlgorithm: RSAPKA,
-		hash:                  crypto.SHA1,
-		oid:                   OidISOSignatureSHA1WithRSA,
-		name:                  "ISO-SHA1-RSA",
-	}
-	crypto.RegisterSignatureAlgorithm(ISOSHA1WithRSA.oid, ISOSHA1WithRSA)
-
 	SHA1WithRSA = &RSASignatureAlgorithm{
 		RSAPublicKeyAlgorithm: RSAPKA,
 		hash:                  crypto.SHA1,
@@ -56,13 +50,13 @@ func init() {
 	}
 	crypto.RegisterSignatureAlgorithm(SHA1WithRSA.oid, SHA1WithRSA)
 
-	SHA224WithRSA := &RSASignatureAlgorithm{
+	ISOSHA1WithRSA = &RSASignatureAlgorithm{
 		RSAPublicKeyAlgorithm: RSAPKA,
-		hash:                  crypto.SHA224,
-		oid:                   OidSignatureSHA224WithRSA,
-		name:                  "SHA224-RSA",
+		hash:                  crypto.SHA1,
+		oid:                   OidISOSignatureSHA1WithRSA,
+		name:                  "ISO-SHA1-RSA",
 	}
-	crypto.RegisterSignatureAlgorithm(SHA224WithRSA.oid, SHA224WithRSA)
+	crypto.RegisterSignatureAlgorithm(ISOSHA1WithRSA.oid, ISOSHA1WithRSA)
 
 	SHA256WithRSA = &RSASignatureAlgorithm{
 		RSAPublicKeyAlgorithm: RSAPKA,
@@ -135,9 +129,14 @@ func (pka *RSAPublicKeyAlgorithm) CanSign() bool {
 	return true
 }
 
-// func (pka *RSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PublicKey) (crypto.SignatureAlgorithm, error) {
-// 	return SHA384WithRSA, nil
-// }
+func (pka *RSAPublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
+	_, ok := pk.(*PublicKey)
+	return ok
+}
+
+func (pka *RSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
+	return SHA384WithRSA, nil
+}
 
 // PKIXPublicKeyInfoParser interface implementation
 

@@ -330,7 +330,7 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error) {
 func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
 	// try PKCS8 first
 	var privKey pkcs8.PKCS8PrivateKey
-	if _, err := asn1.Unmarshal(der, &privKey); err != nil {
+	if _, err := asn1.Unmarshal(der, &privKey); err == nil {
 		for _, pka := range crypto.PublicKeyAlgorithms {
 			if !pka.CanSign() {
 				continue
@@ -342,7 +342,7 @@ func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
 			}
 
 			key, err := marshaler.UnmarshalPKCS8PrivateKey(der)
-			if err != nil {
+			if err == nil {
 				return key, nil
 			}
 

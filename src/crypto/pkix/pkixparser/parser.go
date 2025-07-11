@@ -1,3 +1,6 @@
+// Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 package pkixparser
 
 import (
@@ -15,15 +18,20 @@ type PKIXPublicKeyInfoParser interface {
 
 func GetPKIXPublicKeyInfoFromPublicKey(pk crypto.PublicKey) (*pkix.PkixPublicKeyInfo, error) {
 	for _, pka := range crypto.PublicKeyAlgorithms {
+		if !pka.IsCorrectKeyType(pk) {
+			continue
+		}
+
 		parser, ok := pka.(PKIXPublicKeyInfoParser)
 		if !ok {
 			continue
 		}
 
 		pkb, pkai, err := parser.MarshalPKIXPublicKey(pk)
-		if errors.Is(err, crypto.ErrMismatchedKey) {
+		if errors.Is(err, crypto.ErrMismatchedKey) || errors.Is(err, crypto.ErrAlgorithmNotImplemented) {
 			continue
 		}
+		
 		if err != nil {
 			return nil, fmt.Errorf("pkix: public key info parser was found and matched to the key type, but marshaling failed: %w", err)
 		}
