@@ -241,7 +241,9 @@ type Decrypter interface {
 
 type DecrypterOpts any
 
+// Make sure to import algorithm packages to register them, or call `import _ "crypto/init"` to register them all
 var PublicKeyAlgorithms = make(map[string]PublicKeyAlgorithm)
+// Make sure to import algorithm packages to register them, or call `import _ "crypto/init"` to register them all
 var SignatureAlgorithms = make(map[string]SignatureAlgorithm)
 
 func RegisterPublicKeyAlgorithm(oid asn1.ObjectIdentifier, pa PublicKeyAlgorithm) error {

@@ -15,6 +15,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/ecdsa"
+	_ "crypto/init"
 	"crypto/pkcs8"
 	"crypto/rsa"
 	"crypto/x509"

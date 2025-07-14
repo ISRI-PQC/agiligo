@@ -5,6 +5,7 @@ package pkixparser
 
 import (
 	"crypto"
+	_ "crypto/init"
 	"crypto/pkix"
 	"encoding/asn1"
 	"errors"
@@ -31,7 +32,7 @@ func GetPKIXPublicKeyInfoFromPublicKey(pk crypto.PublicKey) (*pkix.PkixPublicKey
 		if errors.Is(err, crypto.ErrMismatchedKey) || errors.Is(err, crypto.ErrAlgorithmNotImplemented) {
 			continue
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("pkix: public key info parser was found and matched to the key type, but marshaling failed: %w", err)
 		}
