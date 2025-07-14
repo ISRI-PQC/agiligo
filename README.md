@@ -1,3 +1,12 @@
+# AgiliGo: Crypto-agile fork of Go Programming Language
+This repository is a fork of Go Programming Language, that allows to openly register new (and even overwrite) signature algorithms. All existing `crypto` packages have been modified to reflect these new changes and with high probability keeping legacy functionalities.
+
+We have also added an implementation of ML-DSA (FIPS 204). This means that the current version of AgiliGo can parse and verify x509 certificates with these signatures.
+
+Detailed documentation together with examples is on the TODO list.
+
+---
+
 # The Go Programming Language
 
 Go is an open source programming language that makes it easy to build simple,
