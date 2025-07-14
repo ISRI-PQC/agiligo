@@ -246,27 +246,33 @@ var SignatureAlgorithms = make(map[string]SignatureAlgorithm)
 
 func RegisterPublicKeyAlgorithm(oid asn1.ObjectIdentifier, pa PublicKeyAlgorithm) error {
 	if _, ok := PublicKeyAlgorithms[oid.String()]; ok {
-		return errors.New("agilicrypto: duplicate public key algorithm")
+		return errors.New("crypto: duplicate public key algorithm")
 	}
 	PublicKeyAlgorithms[oid.String()] = pa
 	return nil
 }
 
 func RegisterSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm) error {
+	if sa == nil {
+		return errors.New("crypto: nil signature algorithm")
+	}
 	if _, ok := PublicKeyAlgorithms[sa.GetPublicKeyAlgorithmOID().String()]; !ok {
-		return errors.New("agilicrypto: public key algorithm not registered, use RegisterPublicKeyAlgorithm first")
+		return errors.New("crypto: public key algorithm not registered, use RegisterPublicKeyAlgorithm first")
 	}
 
 	if _, ok := SignatureAlgorithms[oid.String()]; ok {
-		return errors.New("agilicrypto: duplicate signature algorithm")
+		return errors.New("crypto: duplicate signature algorithm")
 	}
 	SignatureAlgorithms[oid.String()] = sa
 	return nil
 }
 
 func OverwriteSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm, token utils.AcknowledgementToken) error {
+	if sa == nil {
+		return errors.New("crypto: nil signature algorithm")
+	}
 	if _, ok := SignatureAlgorithms[oid.String()]; !ok {
-		return errors.New("agilicrypto: signature algorithm not registered, use RegisterSignatureAlgorithm first")
+		return errors.New("crypto: signature algorithm not registered, use RegisterSignatureAlgorithm first")
 	}
 
 	SignatureAlgorithms[oid.String()] = sa
