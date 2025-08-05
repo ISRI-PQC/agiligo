@@ -65,6 +65,10 @@ In these maps, the key is a stringified ASN.1 Object Identifier.
 ### Examples  
 For examples, visit [README_EXAMPLE_USAGE.md](README_EXAMPLE_USAGE.md).  
 
+---
+
+> Disclaimer: All markdown text for AgiliGo was written entirely by a human, but the GPT-4o mini LLM model was used to correct spelling, grammar, and punctuation, as well as to enhance clarity and conciseness without altering the original meaning.
+
 ---  
 
 > Below are the original contents of Go's official README.md

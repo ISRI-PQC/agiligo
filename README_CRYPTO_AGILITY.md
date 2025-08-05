@@ -6,8 +6,6 @@ This document clarifies how crypto-agility is implemented in the current solutio
 
 > Additionally, TLS functionality is not affected by these changes; its algorithms and implementation remain unchanged.
 
-> Disclaimer: The original text was written entirely by a human, but the GPT-4o mini LLM model was used to correct spelling, grammar, and punctuation, as well as to enhance clarity and conciseness without altering the original meaning.
-
 ## Main cryptographic API
 The core of our changes is in the `crypto.go` file. First, we define two interfaces:
 
