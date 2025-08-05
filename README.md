@@ -1,67 +1,73 @@
 # AgiliGo: Crypto-Agile Fork of Go Programming Language
-This repository is a fork of Go Programming Language, that allows to openly register new (and even overwrite) signature algorithms. All existing `crypto` packages have been modified to reflect these new changes and with high probability keeping legacy functionalities.
+This repository is a fork of the Go Programming Language that allows users to openly register new signature algorithms and even overwrite existing ones. All current `crypto` packages have been modified to reflect these changes while maintaining legacy functionalities.
 
 We have also added an implementation of ML-DSA (FIPS 204). This means that the current version of AgiliGo can parse and verify x509 certificates with these signatures.
 
-This fork is currently based from `v1.24.4` tag of the Go's upstream.
+This fork is based on the `v1.24.4` tag of Go's upstream.
 
 ## Why?
+At [ISRI](https://cyber.ee/research), we are focusing on the next step of migrating to Post-Quantum Cryptography: implementing it in real-world applications. We are studying its behavior, benchmarking its performance, and addressing engineering and interoperability challenges.
 
-At [ISRI](https://cyber.ee/research), we are focusing on the next step of migration to Post-Quantum Cryptography: its actual implementation in real-world applications, studying its behavior, benchmarking, solving engineering and interoperability obstacles, and more. We increasingly encountered tools that did not offer effective ways to add new algorithms. We have seen so many "Error: signature not supported" errors throughout various programming languages and libraries. So we decided to create our own solution that we will continue using in our PQ-implementation efforts. Crypto agility is a hot topic right now and we hope this work might spark some discussions and further developments.
+We have increasingly encountered tools that lack effective methods for adding new algorithms, leading to numerous "algorithm not supported" errors across various programming languages and libraries.
 
-For more details about our journey and our rationale (including why we chose Go), read [README_JOURNEY.md](README_JOURNEY.md)
+Consequently, we decided to create our own solution, which we will continue to use in our PQ implementation efforts. Crypto agility is a hot topic right now, and we hope this work will spark discussions and further developments.
+
+For more details about our journey and rationale, including our choice of Go, read [README_JOURNEY.md](README_JOURNEY.md).
 
 ## How?
 
-There are _some_ solutions to achieve crypto agility out there. Java's security provider system might be one (although it is argued that this approach is cumbersome and very hard to maintain). Since we are operating in Go ecosystem, we tried to be as much idiomatic as possible (albeit, crypto-agility itself is quite a new concept for Go to some extends). Thus, our solution (1) is quite similar to other battery-like system in Go (such as `database/sql`, and hash functions implementations), and (2) retains all rationale by the Go's developers (e.g. digitally signing x509 certificates with DSA is still disallowed, even when the signing functions are more flexible, or keeping the distinction between public key and signature algorithms in x509 package).
+There are _some_ solutions available to achieve crypto agility. Java's security provider system is one option, although it is often considered cumbersome and difficult to maintain. Since we operate within the Go ecosystem, we aimed to be as idiomatic as possible, even though crypto agility is still a relatively new concept in Go. Our solution (1) closely resembles other battery-like systems in Go, such as `database/sql` and hash function implementations, and (2) adheres to the principles established by Go's developers. For example, digitally signing x509 certificates with DSA remains disallowed, even though the signing functions are more flexible, and the distinction between public key algorithms and signature algorithms in the x509 package is maintained.
 
-For more details about crypto-agility implementation, read [README_CRYPTO_AGILITY.md](README_CRYPTO_AGILITY.md).
+For more details about the crypto agility implementation, please read [README_CRYPTO_AGILITY.md](README_CRYPTO_AGILITY.md).
 
 ## When is this useful to me?
 When the Go's `crypto` package does not implement an algorithm you desire, when you want to experiment, or when you need to develop new proof-of-concepts of cryptographic applications.
 
 In our case, the tipping point for creating fork of entire Go was our need to create, parse, and verify post-quantum X509 certificates. But we do expect our needs to grow in near future in the area of public key infrastructures, secure communications, and other more advanced uses cases (e.g. threshold cryptography).
 
+## When is this useful to me?
+In our case, the tipping point for creating a fork of the entire Go was our need to create, parse, and verify post-quantum X.509 certificates. However, we expect our needs to grow in the near future in areas such as public key infrastructures, secure communications, and other advanced use cases, such as threshold cryptography.
+
 ## How do I use this?
-You can use our work by replacing your installed instance of Go with ours. Simply clone this repository into a place where your Go would normally reside (typically `/usr/local/go`), then adding the `bin` folder to the $PATH.
+You can use our work by replacing your installed instance of Go with ours. Simply clone this repository into the location where your Go is typically installed (usually `/usr/local/go`), and then add the `bin` folder to your $PATH.
 
-> NB! Currently, the crypto agility is implemented for signature algorithms only!
+> NB! Currently, crypto agility is implemented only for signature algorithms!
 
-### Initialization
-By installing this version of Go, nothing much should have to be changed in your existing Go application (at maximum, you would have to change a few import statements, for example from `crypto/x509/pkix` to `crypto/pkix`).
+### Initialization  
+By installing this version of Go, you should not need to change much in your existing Go application. At most, you may need to modify a few import statements, such as changing `crypto/x509/pkix` to `crypto/pkix`.  
 
-**There is one major caveat introduced**: in order to use some cryptographic algorithm (let's say an RSA), it's `crypto/XY` package should be imported (in RSA case that would be `import "crypto/rsa"`). That is because the algorithm packages now "register" themselves to the crypto package in the `init()` functions. If you want to be sure that all available crypto algorithms are available, use the `import _ "crypto/init"` statement to register them all at once.
+**There is one major caveat**: to use certain cryptographic algorithms (for example, RSA), you must import the corresponding `crypto/XY` package (in the case of RSA, that would be `import "crypto/rsa"`). This is because the algorithm packages now "register" themselves with the crypto package in their `init()` functions. To ensure that all available crypto algorithms are accessible, use the statement `import _ "crypto/init"` to register them all at once.  
 
-There are two reasons why this caveat is not that threatening. First, Go applications which expect to use RSA algorithm already import `crypto/rsa` for other purposes and second, the 
+There are two reasons why this caveat is not particularly concerning. First, Go applications that expect to use the RSA algorithm already import `crypto/rsa` for other purposes. Second, these packages are likely already initialized through other packages that the application imports, such as `crypto/x509`.
 
-### Introducing new algorithms
-If you wish to introduce new digital signature algorithm, you need to implement the `crypto.SignatureAlgorithm` interface. This interface also embeds the `crypto.PublicKeyAlgorithm`, so you may need to implement that as well (in a case where it is not already implemented). For example, if you wish to add some kind of special RSA digital signature function, which would append `this_is_funky_signature_algorithm` bytes in front of RSA signature bytes, you do not need to implement `crypto.PublicKeyAlgorithm` as it is already implemented in `crypto/rsa` package. Your new `crypto.SignatureAlgorithm` would then embed this existing `crypto.PublicKeyAlgorithm`.
+### Introducing New Algorithms  
+To introduce a new digital signature algorithm, you must implement the `crypto.SignatureAlgorithm` interface. This interface also embeds the `crypto.PublicKeyAlgorithm`, so you may need to implement that as well if it hasn't been done already. For instance, if you want to add a special RSA digital signature function that appends `this_is_funky_signature_algorithm` ASCII bytes before the RSA signature bytes, you do not need to implement `crypto.PublicKeyAlgorithm`, as it is already provided in the `crypto/rsa` package. Your new `crypto.SignatureAlgorithm` will then incorporate this existing `crypto.PublicKeyAlgorithm`.  
 
-Then, you can use functions
+Next, you can use the following functions:  
 
 `crypto.RegisterPublicKeyAlgorithm(oid asn1.ObjectIdentifier, pa PublicKeyAlgorithm) error`  
-`crypto.RegisterSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm) error` 
+`crypto.RegisterSignatureAlgorithm(oid asn1.ObjectIdentifier, sa SignatureAlgorithm) error`  
 
-to register these new algorithms. These functions require an ASN.1 Object Identifier object from the `encoding/asn1` package, which serve as a main identificator in the map of registered algorithms.
+to register these new algorithms. These functions require an ASN.1 Object Identifier object from the `encoding/asn1` package, which serves as the primary identifier in the map of registered algorithms.  
 
-After that, your algorithm will become available for generic crypto functions, such as creating and signing X509 certificates, parsing a PKCS8 encoded private key, etc.
+After registration, your algorithm will be available for general crypto functions, such as creating and signing X509 certificates and parsing a PKCS8 encoded private key.
 
-### Usage
-Internal packages (currently mostly a `crypto/x509`, `crypto/tls` is coming later) will use this new logic automatically. In case you want to specifically use e.g. an RSA with SHA256 signature, you could either (1) implement the logic the same way as it was in regular Go (using `crypto/rsa` to generate the key, parsing it as `crypto.Signer`, and using it to sign stuff), or (2) you can now grab a signature algorithm instance by calling `crypto.SignatureAlgorithms[rsa.OidSignatureSHA256WithRSA]` and running its convenient functions.
+### Usage  
+Internal packages, primarily `crypto/x509` (with `crypto/tls` coming later), will automatically utilize this new logic. If you want to specifically use an RSA signature with SHA256, you have two options: (1) implement the logic as it was done in regular Go by using `crypto/rsa` to generate the key, parsing it as `crypto.Signer`, and using it to sign data, or (2) retrieve a signature algorithm instance by calling `crypto.SignatureAlgorithms[rsa.OidSignatureSHA256WithRSA]` and using its convenient functions.  
 
-Crypto packages now exposes two variables:
+The Crypto package now exposes two variables:  
 
 `var PublicKeyAlgorithms map[string]PublicKeyAlgorithm`  
-`var SignatureAlgorithms map[string]SignatureAlgorithm`
+`var SignatureAlgorithms map[string]SignatureAlgorithm`  
 
-where the map's key is a stringified ASN.1 Object Identifier.
+In these maps, the key is a stringified ASN.1 Object Identifier.
 
-### Examples
-For some examples, visit [README_EXAMPLE.md](README_EXAMPLE.md).
+### Examples  
+For examples, visit [README_EXAMPLE_USAGE.md](README_EXAMPLE_USAGE.md).  
 
----
+---  
 
-> Following is the original contents of Go README.md
+> Below are the original contents of Go's official README.md
 
 # The Go Programming Language
 
