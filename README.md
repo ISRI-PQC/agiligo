@@ -23,9 +23,6 @@ For more details about the crypto agility implementation, please read [README_CR
 ## When is this useful to me?
 When the Go's `crypto` package does not implement an algorithm you desire, when you want to experiment, or when you need to develop new proof-of-concepts of cryptographic applications.
 
-In our case, the tipping point for creating fork of entire Go was our need to create, parse, and verify post-quantum X509 certificates. But we do expect our needs to grow in near future in the area of public key infrastructures, secure communications, and other more advanced uses cases (e.g. threshold cryptography).
-
-## When is this useful to me?
 In our case, the tipping point for creating a fork of the entire Go was our need to create, parse, and verify post-quantum X.509 certificates. However, we expect our needs to grow in the near future in areas such as public key infrastructures, secure communications, and other advanced use cases, such as threshold cryptography.
 
 ## How do I use this?
