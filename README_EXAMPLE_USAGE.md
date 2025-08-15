@@ -20,7 +20,7 @@ rsa256OID := rsa.OidSignatureSHA256WithRSA
 sa := crypto.SignatureAlgorithms[rsa256OID.String()]
 
 // do operations
-_, sk, _ := sa.GenerateKeyPair(rand.Reader, rsa.RSAKeyGenParameters{Bits: 2048})
+_, sk, _ := sa.GenerateKeyPair(rand.Reader, &rsa.RSAKeyGenParameters{Bits: 2048})
 data := []byte("some data")
 signature, _ := sa.Sign(rand.Reader, data, sk)
 ```
@@ -30,7 +30,7 @@ signature, _ := sa.Sign(rand.Reader, data, sk)
 sa := rsa.SHA256WithRSA
 
 // do operations
-_, sk, _ := sa.GenerateKeyPair(rand.Reader, rsa.RSAKeyGenParameters{Bits: 2048})
+_, sk, _ := sa.GenerateKeyPair(rand.Reader, &rsa.RSAKeyGenParameters{Bits: 2048})
 data := []byte("some data")
 signature, _ := sa.Sign(rand.Reader, data, sk)
 ```
