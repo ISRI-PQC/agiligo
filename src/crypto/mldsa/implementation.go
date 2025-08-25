@@ -21,37 +21,31 @@ import (
 )
 
 var (
-	MLDSA44 *MLDSASignatureAlgorithm
-	MLDSA65 *MLDSASignatureAlgorithm
-	MLDSA87 *MLDSASignatureAlgorithm
-)
-
-var mldsaSignatureAlgorithms = []*MLDSASignatureAlgorithm{
-	{
+	MLDSA44 *MLDSASignatureAlgorithm = &MLDSASignatureAlgorithm{
 		oid:    OidPublicKeyMLDSA44,
 		name:   mldsa44.Scheme().Name(),
 		scheme: mldsa44.Scheme(),
-	},
-	{
+	}
+	MLDSA65 *MLDSASignatureAlgorithm = &MLDSASignatureAlgorithm{
 		oid:    OidPublicKeyMLDSA65,
 		name:   mldsa65.Scheme().Name(),
 		scheme: mldsa65.Scheme(),
-	},
-	{
+	}
+	MLDSA87 *MLDSASignatureAlgorithm = &MLDSASignatureAlgorithm{
 		oid:    OidPublicKeyMLDSA87,
 		name:   mldsa87.Scheme().Name(),
 		scheme: mldsa87.Scheme(),
-	},
+	}
+)
+
+var mldsaSignatureAlgorithms = []*MLDSASignatureAlgorithm{
+	MLDSA44, MLDSA65, MLDSA87,
 }
 
 var mldsaSignatureAlgorithmsByName = make(map[string]*MLDSASignatureAlgorithm)
 var mldsaSignatureAlgorithmsByOID = make(map[string]*MLDSASignatureAlgorithm)
 
 func init() {
-	MLDSA44 = mldsaSignatureAlgorithms[0]
-	MLDSA65 = mldsaSignatureAlgorithms[1]
-	MLDSA87 = mldsaSignatureAlgorithms[2]
-
 	for _, sa := range mldsaSignatureAlgorithms {
 		mldsaSignatureAlgorithmsByName[sa.name] = sa
 		mldsaSignatureAlgorithmsByOID[sa.oid.String()] = sa
