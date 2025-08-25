@@ -48,6 +48,10 @@ var mldsaSignatureAlgorithmsByName = make(map[string]*MLDSASignatureAlgorithm)
 var mldsaSignatureAlgorithmsByOID = make(map[string]*MLDSASignatureAlgorithm)
 
 func init() {
+	MLDSA44 = mldsaSignatureAlgorithms[0]
+	MLDSA65 = mldsaSignatureAlgorithms[1]
+	MLDSA87 = mldsaSignatureAlgorithms[2]
+
 	for _, sa := range mldsaSignatureAlgorithms {
 		mldsaSignatureAlgorithmsByName[sa.name] = sa
 		mldsaSignatureAlgorithmsByOID[sa.oid.String()] = sa
