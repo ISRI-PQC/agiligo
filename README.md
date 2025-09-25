@@ -26,7 +26,8 @@ When the Go's `crypto` package does not implement an algorithm you desire, when 
 In our case, the tipping point for creating a fork of the entire Go was our need to create, parse, and verify post-quantum X.509 certificates. However, we expect our needs to grow in the near future in areas such as public key infrastructures, secure communications, and other advanced use cases, such as threshold cryptography.
 
 ## How do I use this? / Installation / Get Started
-You can use our work by replacing your installed instance of Go with ours. Simply clone this repository into the location where your Go is typically installed (usually `/usr/local/go`), and then add the `bin` folder to your $PATH.
+
+Clone this repository, `cd` into src, and run `all.bash` to build the project on your platform. After that, add `agiligo/bin` folder to your $PATH, and set `GOROOT` environment variable to `agiligo` folder.
 
 > NB! Currently, crypto agility is implemented only for signature algorithms!
 
