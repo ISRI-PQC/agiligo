@@ -1272,8 +1272,7 @@ var PackageSymbols = map[string][]Symbol{
 		{"VerifyOptions.MaxConstraintComparisions", Field, 10},
 		{"VerifyOptions.Roots", Field, 0},
 	},
-	"crypto/x509/pkix": {
-		{"(*CertificateList).HasExpired", Method, 0},
+	"crypto/pkix": {
 		{"(*Name).FillFromRDNSequence", Method, 0},
 		{"(Name).String", Method, 10},
 		{"(Name).ToRDNSequence", Method, 0},

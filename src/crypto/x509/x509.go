@@ -1845,7 +1845,7 @@ type RevocationList struct {
 }
 
 // These structures reflect the ASN.1 structure of X.509 CRLs better than
-// the existing crypto/x509/pkix variants do. These mirror the existing
+// the existing crypto/pkix variants do. These mirror the existing
 // certificate structs in this file.
 //
 // Notably, we include issuer as an asn1.RawValue, mirroring the behavior of

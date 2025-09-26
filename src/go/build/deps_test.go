@@ -563,7 +563,7 @@ var depsRules = `
 	golang.org/x/crypto/chacha20poly1305, crypto/tls/internal/fips140tls
 	< crypto/internal/hpke
 	< crypto/x509/internal/macos
-	< crypto/x509/pkix
+	< crypto/pkix
 	< crypto/x509
 	< crypto/tls;
 
