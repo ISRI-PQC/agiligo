@@ -5,13 +5,13 @@
 package rsa
 
 import (
-	"crypto/pkix"
+	"crypto/pkcs8"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
 	"internal/godebug"
 	"math/big"
-	"crypto/pkcs8"
 )
 
 // pkcs1PrivateKey is a structure which mirrors the PKCS #1 ASN.1 for an RSA private key.

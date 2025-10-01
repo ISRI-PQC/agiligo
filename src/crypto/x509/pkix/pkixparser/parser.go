@@ -1,3 +1,4 @@
+// This package is separated from crypto/x509/pkix, because it imports crypto package, which import pkix. This would introduce import cycles.
 // Copyright 2025 Petr Muzikant, Cybernetica AS. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -6,7 +7,7 @@ package pkixparser
 import (
 	"crypto"
 	_ "crypto/init"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"

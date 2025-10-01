@@ -5,7 +5,7 @@ package mldsa
 
 import (
 	"crypto/pkcs8"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
 	"io"

@@ -7,7 +7,7 @@ package crypto
 
 import (
 	"crypto/utils"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"hash"
@@ -243,6 +243,7 @@ type DecrypterOpts any
 
 // Make sure to import algorithm packages to register them, or call `import _ "crypto/init"` to register them all
 var PublicKeyAlgorithms = make(map[string]PublicKeyAlgorithm)
+
 // Make sure to import algorithm packages to register them, or call `import _ "crypto/init"` to register them all
 var SignatureAlgorithms = make(map[string]SignatureAlgorithm)
 

@@ -5,7 +5,7 @@ package dsa
 
 import (
 	"crypto"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -65,7 +65,7 @@ func (dsa *DSAPublicKeyAlgorithm) IsCorrectKeyType(pk crypto.PublicKey) bool {
 	return ok
 }
 
-func (dsa *DSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error){
+func (dsa *DSAPublicKeyAlgorithm) GetDefaultSignatureAlgorithm(pk crypto.PrivateKey) (crypto.SignatureAlgorithm, error) {
 	return DSAWithSHA256, nil
 }
 

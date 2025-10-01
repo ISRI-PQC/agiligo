@@ -109,7 +109,7 @@ The `x509.SignatureAlgorithm` and `x509.PublicKeyAlgorithm` (of integer types) a
 Since marshaling and unmarshaling public and private keys were significant sources of hard-coded switch statements, we moved the logic into the algorithms themselves by creating two additional interfaces:
 
 ```go
-package pkixparser // crypto/pkix/pkixparser
+package pkixparser // crypto/x509/pkix/pkixparser
 
 type PKIXPublicKeyInfoParser interface {
 	MarshalPKIXPublicKey(pk crypto.PublicKey) ([]byte, *pkix.AlgorithmIdentifier, error)

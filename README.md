@@ -32,7 +32,7 @@ Clone this repository, `cd` into src, and run `all.bash` to build the project on
 > NB! Currently, crypto agility is implemented only for signature algorithms!
 
 ### Initialization  
-By installing this version of Go, you should not need to change much in your existing Go application. At most, you may need to modify a few import statements, such as changing `crypto/x509/pkix` to `crypto/pkix`.  
+By installing this version of Go, you should not need to change much in your existing Go application.
 
 **There is one major caveat**: to use certain cryptographic algorithms (for example, RSA), you must import the corresponding `crypto/XY` package (in the case of RSA, that would be `import "crypto/rsa"`). This is because the algorithm packages now "register" themselves with the crypto package in their `init()` functions. To ensure that all available crypto algorithms are accessible, use the statement `import _ "crypto/init"` to register them all at once.  
 

@@ -5,8 +5,8 @@
 package pem_test
 
 import (
-	"crypto/pkix"
 	"crypto/rsa"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"log"

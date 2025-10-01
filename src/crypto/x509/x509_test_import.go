@@ -10,10 +10,10 @@
 package main
 
 import (
-	"crypto/pkix"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
 	"strings"

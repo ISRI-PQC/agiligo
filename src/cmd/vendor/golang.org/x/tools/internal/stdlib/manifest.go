@@ -1272,7 +1272,7 @@ var PackageSymbols = map[string][]Symbol{
 		{"VerifyOptions.MaxConstraintComparisions", Field, 10},
 		{"VerifyOptions.Roots", Field, 0},
 	},
-	"crypto/pkix": {
+	"crypto/x509/pkix": {
 		{"(*Name).FillFromRDNSequence", Method, 0},
 		{"(Name).String", Method, 10},
 		{"(Name).ToRDNSequence", Method, 0},

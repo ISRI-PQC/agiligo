@@ -7,7 +7,7 @@ package rsa
 import (
 	"bytes"
 	"crypto"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"testing"
 )

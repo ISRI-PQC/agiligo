@@ -7,8 +7,8 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	"crypto/pkix"
-	"crypto/pkix/pkixparser"
+	"crypto/x509/pkix"
+	"crypto/x509/pkix/pkixparser"
 	"encoding/asn1"
 	"errors"
 	"fmt"

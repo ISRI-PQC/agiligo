@@ -110,7 +110,7 @@ var packages = []string{
 	"crypto/subtle",
 	"crypto/tls",
 	"crypto/x509",
-	"crypto/pkix",
+	"crypto/x509/pkix",
 	"database",
 	"database/sql",
 	"database/sql/driver",

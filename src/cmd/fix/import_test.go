@@ -274,10 +274,10 @@ import (
 import (
 	"asn1"
 	"crypto"
-	"crypto/pkix"
 	"crypto/rsa"
 	_ "crypto/sha1"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"time"
 )
 
@@ -287,10 +287,10 @@ var x = 1
 
 import (
 	"crypto"
-	"crypto/pkix"
 	"crypto/rsa"
 	_ "crypto/sha1"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"time"
 )

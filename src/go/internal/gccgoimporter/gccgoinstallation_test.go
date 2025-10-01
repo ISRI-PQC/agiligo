@@ -45,7 +45,7 @@ var importablePackages = [...]string{
 	"crypto/subtle",
 	"crypto/tls",
 	"crypto/x509",
-	"crypto/pkix",
+	"crypto/x509/pkix",
 	"database/sql/driver",
 	"database/sql",
 	"debug/dwarf",

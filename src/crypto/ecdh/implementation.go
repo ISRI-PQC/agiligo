@@ -6,7 +6,7 @@ package ecdh
 import (
 	"crypto"
 	"crypto/pkcs8"
-	"crypto/pkix"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
