@@ -29,6 +29,63 @@ In our case, the tipping point for creating a fork of the entire Go was our need
 
 Clone this repository, `cd` into src, and run `all.bash` to build the project on your platform. After that, add `agiligo/bin` folder to your $PATH, and set `GOROOT` environment variable to `agiligo` folder.
 
+However, it makes sense to use AgiliGo for development. Thus, we present combination of `Dockerfile` and `.devcontainer.json` for setting up environment, which has AgiliGo built, and ready to go:
+
+`Dockerfile`:
+```Dockerfile
+# FROM ubuntu:24.04
+FROM mcr.microsoft.com/devcontainers/go:1.24
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libc6-dev \
+        netbase \
+        ca-certificates \
+        curl \
+        wget \
+        git \
+        bash \
+        gcc \
+        && rm -rf /var/lib/apt/lists/*
+
+# Clone the Agiligo repository from GitHub and build it
+WORKDIR /usr/local/agiligo
+ENV GOROOT_BOOTSTRAP=/usr/local/go
+RUN git clone --depth 1 https://github.com/ISRI-PQC/agiligo.git . && cd src && ./all.bash 
+
+# Establish path to Agiligo
+ENV GOROOT=/usr/local/agiligo
+RUN echo "export PATH=/usr/local/agiligo/bin:$PATH" >> ~/.bashrc
+
+ENTRYPOINT ["go"]
+```
+
+`.devcontainer.json`
+```json
+{
+	"name": "AgiliGo Development Container",
+	"dockerFile" : "Dockerfile",
+	"runArgs": [
+			"--interactive",
+			"--tty"
+			],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"gitlab.gitlab-workflow"
+			],
+			"settings": {
+				"go.goroot": "/usr/local/agiligo",
+				"go.gopath": "/go"
+			}
+		}
+	}
+}
+```
+
 > NB! Currently, crypto agility is implemented only for signature algorithms!
 
 ### Initialization  
