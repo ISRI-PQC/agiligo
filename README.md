@@ -74,7 +74,6 @@ ENTRYPOINT ["go"]
 		"vscode": {
 			"extensions": [
 				"golang.go",
-				"gitlab.gitlab-workflow"
 			],
 			"settings": {
 				"go.goroot": "/usr/local/agiligo",
