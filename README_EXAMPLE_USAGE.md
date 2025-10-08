@@ -35,7 +35,7 @@ data := []byte("some data")
 signature, _ := sa.Sign(rand.Reader, data, sk)
 ```
 
-## I do know which algorithm to use at compile time, it is determined at runtime
+## I do not know which algorithm to use at compile time, it is determined at runtime
 
 Crypto algorithms are usually determined by object identifier. As long as you have access to that, you should be able to use the crypto algorithm registry.
 
