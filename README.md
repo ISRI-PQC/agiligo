@@ -33,7 +33,6 @@ However, it makes sense to use AgiliGo for development. Thus, we present combina
 
 `Dockerfile`:
 ```Dockerfile
-# FROM ubuntu:24.04
 FROM mcr.microsoft.com/devcontainers/go:1.24
 
 # Install dependencies
